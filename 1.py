@@ -1,6 +1,7 @@
 import time
 import sys
 
+<<<<<<< HEAD
 fake_messages = [
     "Encrypting all files... 10%",
     "Encrypting all files... 25%",
