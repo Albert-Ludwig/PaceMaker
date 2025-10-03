@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 import json
 
 MODES = ["AOO", "VOO", "AAI", "VVI"]
+
 DEFAULT_PARAMS = {
     "Lower Rate Limit": 60,
     "Upper Rate Limit": 120,
@@ -14,12 +15,14 @@ DEFAULT_PARAMS = {
     "ARP": 250
 }
 
+
 class DCMInterface:
     def __init__(self, root, username):
         self.root = root
         self.root.title("DCM Interface")
         self.root.geometry("900x700")
         self.username = username
+
         self.device_id = "PACEMAKER-001"
         self.last_device_id = "PACEMAKER-001"  # Simulate stored device ID
         self.is_connected = True  # Simulated connection status
@@ -30,29 +33,20 @@ class DCMInterface:
     def create_widgets(self):
         ttk.Label(self.root, text=f"Welcome, {self.username}", font=("Arial", 18)).pack(pady=10)
 
+        # Sign out button
         signout_btn = ttk.Button(self.root, text="Sign Out", command=self.sign_out)
         signout_btn.place(x=10, y=10)
 
-        # Mode selection
-        ttk.Label(self.root, text="Select Pacing Mode:").pack()
-        self.mode_var = tk.StringVar(value=MODES[0])
-        ttk.Combobox(self.root, textvariable=self.mode_var, values=MODES, state="readonly").pack()
+        # View Parameters button
+        view_params_btn = ttk.Button(self.root, text="View Parameters", command=self.open_param_window)
+        view_params_btn.place(x=10, y=50)
 
-        # Parameter inputs
-        self.entries = {}
-        for param in DEFAULT_PARAMS:
-            frame = ttk.Frame(self.root)
-            frame.pack(pady=3)
-            ttk.Label(frame, text=param + ":").pack(side="left")
-            entry = ttk.Entry(frame)
-            entry.insert(0, str(DEFAULT_PARAMS[param]))
-            entry.pack(side="left")
-            self.entries[param] = entry
+        # Prepare entries dict for popup use only
+        self.entries = {param: str(DEFAULT_PARAMS[param]) for param in DEFAULT_PARAMS}
 
-        # Buttons
+        # Action buttons
         btn_frame = ttk.Frame(self.root)
         btn_frame.pack(pady=10)
-        ttk.Button(btn_frame, text="Apply Mode", command=self.apply_mode).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Save Parameters", command=self.save_params).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Load Parameters", command=self.load_params).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Reset to Defaults", command=self.reset_params).pack(side="left", padx=5)
@@ -74,30 +68,30 @@ class DCMInterface:
         self.status_label.config(text=f"Mode {mode} applied.")
         self.check_device_identity()
 
-    def save_params(self):
+    def save_param_window(self, param_entries):
         try:
-            data = {param: float(self.entries[param].get()) for param in self.entries}
+            data = {param: float(entry.get()) for param, entry in param_entries.items()}
             with open("data/parameters.json", "w") as f:
-                json.dump(data, f)
+                json.dump(data, f, indent=2)
             messagebox.showinfo("Save", "Parameters saved successfully.")
         except ValueError:
             messagebox.showerror("Error", "Invalid parameter value.")
 
-    def load_params(self):
+    def load_param_window(self, param_entries):
         try:
-            with open("saved_params.json", "r") as f:
+            with open("data/parameters.json", "r") as f:
                 data = json.load(f)
-            for param in self.entries:
-                self.entries[param].delete(0, tk.END)
-                self.entries[param].insert(0, str(data.get(param, DEFAULT_PARAMS[param])))
+            for param, entry in param_entries.items():
+                entry.delete(0, tk.END)
+                entry.insert(0, str(data.get(param, DEFAULT_PARAMS[param])))
             messagebox.showinfo("Load", "Parameters loaded successfully.")
         except FileNotFoundError:
             messagebox.showerror("Error", "No saved parameters found.")
 
-    def reset_params(self):
-        for param in self.entries:
-            self.entries[param].delete(0, tk.END)
-            self.entries[param].insert(0, str(DEFAULT_PARAMS[param]))
+    def reset_param_window(self, param_entries):
+        for param, entry in param_entries.items():
+            entry.delete(0, tk.END)
+            entry.insert(0, str(DEFAULT_PARAMS[param]))
         messagebox.showinfo("Reset", "Parameters reset to defaults.")
 
     def update_status(self):
@@ -118,6 +112,48 @@ class DCMInterface:
         import main
         main.main()
 
+
+    def open_param_window(self):
+        param_win = tk.Toplevel(self.root)
+        param_win.title("Parameter Settings")
+        param_win.geometry("500x700")
+
+        ttk.Label(param_win, text="Programmable Parameters", font=("Arial", 14)).pack(pady=10)
+
+        # Mode selection in popup
+        ttk.Label(param_win, text="Select Pacing Mode:").pack()
+        mode_var = tk.StringVar(value=MODES[0])
+        ttk.Combobox(param_win, textvariable=mode_var, values=MODES, state="readonly").pack()
+
+        # Parameter inputs in popup
+        param_entries = {}
+        for param in DEFAULT_PARAMS:
+            frame = ttk.Frame(param_win)
+            frame.pack(pady=3)
+            ttk.Label(frame, text=f"{param}:").pack(side="left")
+            entry = ttk.Entry(frame)
+            entry.insert(0, str(DEFAULT_PARAMS[param]))
+            entry.pack(side="left")
+            param_entries[param] = entry
+
+        btn_frame = ttk.Frame(param_win)
+        btn_frame.pack(pady=10)
+        ttk.Button(btn_frame, text="Apply Mode", command=lambda: self.apply_mode_popup(mode_var, param_entries, param_win)).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Save", command=lambda: self.save_param_window(param_entries)).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Load", command=lambda: self.load_param_window(param_entries)).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Reset", command=lambda: self.reset_param_window(param_entries)).pack(side="left", padx=5)
+
+    def apply_mode_popup(self, mode_var, param_entries, param_win):
+        mode = mode_var.get()
+        # Optionally update self.mode_var if you want to sync
+        # self.mode_var = mode_var
+        # Update self.entries with new values
+        for param, entry in param_entries.items():
+            self.entries[param] = entry.get()
+        # Show confirmation (or call backend logic here)
+        messagebox.showinfo("Apply Mode", f"Mode {mode} applied with parameters.")
+        param_win.destroy()
+
+
 class DashboardWindow(DCMInterface):
     pass
-   
