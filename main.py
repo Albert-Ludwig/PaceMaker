@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 from modules.auth import register_user, login_user
+from modules.dashboard import DashboardWindow
 
 class WelcomeWindow:
     def __init__(self, root):
@@ -32,22 +33,15 @@ class WelcomeWindow:
         if msg == "Login successful":
             self.root.destroy()
             root = tk.Tk()
-            ApplicationWindow(root, name)
+            DashboardWindow(root, name)
             root.mainloop()
         else:
             messagebox.showerror("Login", msg)
 
-class ApplicationWindow:
-    def __init__(self, root, username):
-        self.root = root
-        self.root.title("Pacing Mode Selection")
-        self.root.geometry("1920x1080")
-        self.username = username
-
-        tk.Label(root, text=f"Welcome, {self.username}!", font=("Arial", 24)).pack(pady=20)
-        # Add pacing mode UI here
+def main():
+    root = tk.Tk()
+    app = WelcomeWindow(root)
+    root.mainloop()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    WelcomeWindow(root)
-    root.mainloop()
+    main()
