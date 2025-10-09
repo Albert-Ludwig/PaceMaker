@@ -1,20 +1,21 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
+from .mode_config import ParamEnum
 
-MODES = ["AOO", "VOO", "AAI", "VVI"]
-
+# import the modes, parameters, and default values from mode_config.py
+MODES = list(ParamEnum.MODES.keys())
+_defaults_obj = ParamEnum()
 DEFAULT_PARAMS = {
-    "Lower Rate Limit": 60,
-    "Upper Rate Limit": 120,
-    "Atrial Amplitude": 3.5,
-    "Atrial Pulse Width": 0.4,
-    "Ventricular Amplitude": 3.5,
-    "Ventricular Pulse Width": 0.4,
-    "VRP": 250,
-    "ARP": 250
+    "Lower Rate Limit": _defaults_obj.get_default_lrl(),
+    "Upper Rate Limit": _defaults_obj.get_default_url(),
+    "Atrial Amplitude": _defaults_obj.get_default_amplitude(),
+    "Atrial Pulse Width": _defaults_obj.get_default_pulse_width(),
+    "Ventricular Amplitude": _defaults_obj.get_default_amplitude(),
+    "Ventricular Pulse Width": _defaults_obj.get_default_pulse_width(),
+    "VRP": _defaults_obj.get_default_vrp(),
+    "ARP": _defaults_obj.get_default_arp(),
 }
-
 
 class DCMInterface:
     def __init__(self, root, username):
@@ -138,12 +139,12 @@ class DCMInterface:
 
         btn_frame = ttk.Frame(param_win)
         btn_frame.pack(pady=10)
-        ttk.Button(btn_frame, text="Apply Mode", command=lambda: self.apply_mode_popup(mode_var, param_entries, param_win)).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Apply", command=lambda: self.apply_popup(mode_var, param_entries, param_win)).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Save", command=lambda: self.save_param_window(param_entries)).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Load", command=lambda: self.load_param_window(param_entries)).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Reset", command=lambda: self.reset_param_window(param_entries)).pack(side="left", padx=5)
 
-    def apply_mode_popup(self, mode_var, param_entries, param_win):
+    def apply_popup(self, mode_var, param_entries, param_win):
         mode = mode_var.get()
         # Optionally update self.mode_var if you want to sync
         # self.mode_var = mode_var
