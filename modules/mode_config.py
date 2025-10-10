@@ -188,6 +188,19 @@ class ParamEnum:
         self.Atrial_Amplitude = y
 
     # for ventricular amplitude, step 0.1 between [0.5,3.2], step 0.5 between [3.5,7.0], range [0.5,7.0]
+    def set_Ventricular_Amplitude(self, val):
+        if not self._is_number(val):
+            raise TypeError("Ventricular_Amplitude must be numeric")
+        x = float(val)
+        if 0.5 <= x <= 3.2:
+            y = round(x * 10) / 10.0
+        elif 3.5 <= x <= 7.0:
+            y = self._round_to_step(x, 0.5)
+        else:
+            raise ValueError("Ventricular_Amplitude out of range: [0.5–3.2] or [3.5–7.0] V")
+        self.Ventricular_Amplitude = y
+    
+    # for atrial pulse width, step 0.1 between [0.5,3.2], step 0.5 between [3.5,7.0], range [0.5,7.0]
     def set_Atrial_Pulse_Width(self, val):
         if not self._is_number(val):
             raise TypeError("Atrial_Pulse_Width must be numeric")

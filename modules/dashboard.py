@@ -40,7 +40,7 @@ class DCMInterface:
         self.params = DEFAULT_PARAMS.copy()
         self.create_widgets()
     def save_params(self):
-        """保存当前 self.param 的值到 data/parameters.json"""
+       
         try:
             data = {}
             for key in DEFAULT_PARAMS:
@@ -54,7 +54,7 @@ class DCMInterface:
             messagebox.showerror("Error", str(e))
 
     def load_params(self):
-        """从 data/parameters.json 读取并写入 self.param（调用 setter）"""
+        
         try:
             with open("data/parameters.json", "r") as f:
                 data = json.load(f)
@@ -69,7 +69,7 @@ class DCMInterface:
             messagebox.showerror("Error", str(e))
 
     def reset_params(self):
-        """恢复默认：重建 ParamEnum 实例"""
+        
         self.param = ParamEnum()
         messagebox.showinfo("Reset", "Parameters reset to defaults.")
 
@@ -153,7 +153,7 @@ class DCMInterface:
                 setter = self._resolve_method(self.param, self._setter_candidates_for_key(key))
                 if setter:
                     setter(val)
-            # 刷新界面
+            
             for key, entry in param_entries.items():
                 getter = self._resolve_method(self.param, self._getter_candidates_for_key(key))
                 if getter:
@@ -252,8 +252,6 @@ class DCMInterface:
         messagebox.showinfo("Apply Mode", f"Mode {mode} applied.")
         # 你可以选择关窗或不关窗；若想保留界面供继续调整，就别关：
         # param_win.destroy()
-
-
 
 class DashboardWindow(DCMInterface):
     pass
