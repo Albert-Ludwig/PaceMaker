@@ -1,10 +1,10 @@
 {
-  "Lower Rate Limit": 60.0,
-  "Upper Rate Limit": 120.0,
-  "Atrial Amplitude": 100.0,
-  "Atrial Pulse Width": 0.4,
-  "Ventricular Amplitude": 100.0,
-  "Ventricular Pulse Width": 0.4,
-  "VRP": 320.0,
-  "ARP": 320.0
+  "Lower_Rate_Limit": 61,
+  "Upper_Rate_Limit": 120,
+  "Atrial_Amplitude": 3.5,
+  "Ventricular_Amplitude": 3.5,
+  "Atrial_Pulse_Width": 0.4,
+  "Ventricular_Pulse_Width": 0.4,
+  "ARP": 320,
+  "VRP": 320
 }

@@ -36,8 +36,70 @@ class DCMInterface:
         self.last_device_id = "PACEMAKER-001"  # Simulate stored device ID
         self.is_connected = True  # Simulated connection status
 
+        self.param = ParamEnum() #新增
         self.params = DEFAULT_PARAMS.copy()
         self.create_widgets()
+    def save_params(self):
+        """保存当前 self.param 的值到 data/parameters.json"""
+        try:
+            data = {}
+            for key in DEFAULT_PARAMS:
+                getter = self._resolve_method(self.param, self._getter_candidates_for_key(key))
+                if getter:
+                    data[key] = getter()
+            with open("data/parameters.json", "w") as f:
+                json.dump(data, f, indent=2)
+            messagebox.showinfo("Save", "Parameters saved successfully.")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def load_params(self):
+        """从 data/parameters.json 读取并写入 self.param（调用 setter）"""
+        try:
+            with open("data/parameters.json", "r") as f:
+                data = json.load(f)
+            for key, val in data.items():
+                setter = self._resolve_method(self.param, self._setter_candidates_for_key(key))
+                if setter:
+                    setter(val)
+            messagebox.showinfo("Load", "Parameters loaded successfully.")
+        except FileNotFoundError:
+            messagebox.showerror("Error", "No saved parameters found.")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def reset_params(self):
+        """恢复默认：重建 ParamEnum 实例"""
+        self.param = ParamEnum()
+        messagebox.showinfo("Reset", "Parameters reset to defaults.")
+
+    
+    def _resolve_method(self, obj, candidates):
+        for name in candidates:
+            if hasattr(obj, name):
+                return getattr(obj, name)
+        return None
+
+    def _getter_candidates_for_key(self, key):
+        camel = "".join(p.title() for p in key.split("_"))
+        snake = key.lower()
+        return [
+            f"get_{key}",         # get_Lower_Rate_Limit
+            f"get{camel}",        # getLowerRateLimit
+            f"get_{snake}",       # get_lower_rate_limit
+            f"get{key}",          # getLower_Rate_Limit（备用）
+        ]
+
+    def _setter_candidates_for_key(self, key):
+        camel = "".join(p.title() for p in key.split("_"))
+        snake = key.lower()
+        return [
+            f"set_{key}",         # set_Lower_Rate_Limit
+            f"set{camel}",        # setLowerRateLimit
+            f"set_{snake}",       # set_lower_rate_limit
+            f"set{key}",          # setLower_Rate_Limit（备用）
+        ]
+
 
     def create_widgets(self):
         ttk.Label(self.root, text=f"Welcome, {self.username}", font=("Arial", 18)).pack(pady=10)
@@ -52,13 +114,6 @@ class DCMInterface:
 
         # Prepare entries dict for popup use only
         self.entries = {param: str(DEFAULT_PARAMS[param]) for param in DEFAULT_PARAMS}
-
-        # Action buttons
-        btn_frame = ttk.Frame(self.root)
-        btn_frame.pack(pady=10)
-        ttk.Button(btn_frame, text="Save Parameters", command=self.save_params).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Load Parameters", command=self.load_params).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Reset to Defaults", command=self.reset_params).pack(side="left", padx=5)
 
         # Status indicators
         self.status_label = ttk.Label(self.root, text="", font=("Arial", 12))
@@ -79,23 +134,35 @@ class DCMInterface:
 
     def save_param_window(self, param_entries):
         try:
-            data = {param: float(entry.get()) for param, entry in param_entries.items()}
+            data = {}
+            for key in DEFAULT_PARAMS:
+                getter = self._resolve_method(self.param, self._getter_candidates_for_key(key))
+                data[key] = getter() if getter else param_entries[key].get()
             with open("data/parameters.json", "w") as f:
                 json.dump(data, f, indent=2)
             messagebox.showinfo("Save", "Parameters saved successfully.")
-        except ValueError:
-            messagebox.showerror("Error", "Invalid parameter value.")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
 
     def load_param_window(self, param_entries):
         try:
             with open("data/parameters.json", "r") as f:
                 data = json.load(f)
-            for param, entry in param_entries.items():
-                entry.delete(0, tk.END)
-                entry.insert(0, str(data.get(param, DEFAULT_PARAMS[param])))
+            for key, val in data.items():
+                setter = self._resolve_method(self.param, self._setter_candidates_for_key(key))
+                if setter:
+                    setter(val)
+            # 刷新界面
+            for key, entry in param_entries.items():
+                getter = self._resolve_method(self.param, self._getter_candidates_for_key(key))
+                if getter:
+                    entry.delete(0, tk.END)
+                    entry.insert(0, str(getter()))
             messagebox.showinfo("Load", "Parameters loaded successfully.")
         except FileNotFoundError:
             messagebox.showerror("Error", "No saved parameters found.")
+
 
     def reset_param_window(self, param_entries):
         for param, entry in param_entries.items():
@@ -137,13 +204,17 @@ class DCMInterface:
         # Parameter inputs in popup
         param_entries = {}
         for param in DEFAULT_PARAMS:
-            frame = ttk.Frame(param_win)
-            frame.pack(pady=3)
+            frame = ttk.Frame(param_win); frame.pack(pady=3)
             ttk.Label(frame, text=f"{param}:").pack(side="left")
+
+            getter = self._resolve_method(self.param, self._getter_candidates_for_key(param))
+            value = getter() if getter else DEFAULT_PARAMS[param]
+
             entry = ttk.Entry(frame)
-            entry.insert(0, str(DEFAULT_PARAMS[param]))
+            entry.insert(0, str(value))
             entry.pack(side="left")
             param_entries[param] = entry
+
 
         btn_frame = ttk.Frame(param_win)
         btn_frame.pack(pady=10)
@@ -154,14 +225,34 @@ class DCMInterface:
 
     def apply_popup(self, mode_var, param_entries, param_win):
         mode = mode_var.get()
-        # Optionally update self.mode_var if you want to sync
-        # self.mode_var = mode_var
-        # Update self.entries with new values
-        for param, entry in param_entries.items():
-            self.entries[param] = entry.get()
-        # Show confirmation (or call backend logic here)
-        messagebox.showinfo("Apply Mode", f"Mode {mode} applied with parameters.")
-        param_win.destroy()
+        errors = []
+
+        # 1) 写入：调用 ParamEnum 的 setter（触发分段步进/校验）
+        for key, entry in param_entries.items():
+            setter = self._resolve_method(self.param, self._setter_candidates_for_key(key))
+            if not setter:
+                errors.append(f"{key}: setter not found")
+                continue
+            try:
+                setter(entry.get())
+            except Exception as e:
+                errors.append(f"{key}: {e}")
+
+        if errors:
+            messagebox.showerror("Invalid Input", "\n".join(errors))
+            return
+
+        # 2) 读回：用 getter 把“修正后的值”（例如 0.66→0.7、3.26→3.5）刷新到界面
+        for key, entry in param_entries.items():
+            getter = self._resolve_method(self.param, self._getter_candidates_for_key(key))
+            if getter:
+                entry.delete(0, tk.END)
+                entry.insert(0, str(getter()))
+
+        messagebox.showinfo("Apply Mode", f"Mode {mode} applied.")
+        # 你可以选择关窗或不关窗；若想保留界面供继续调整，就别关：
+        # param_win.destroy()
+
 
 
 class DashboardWindow(DCMInterface):
