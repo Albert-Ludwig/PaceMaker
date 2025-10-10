@@ -107,10 +107,10 @@ class ParameterWindow:
         btn_frame = ttk.Frame(self.param_win)
         btn_frame.pack(pady=10)
 
-        ttk.Button(btn_frame, text="Apply").grid(row=0, column=0, padx=5)
-        ttk.Button(btn_frame, text="Save").grid(row=0, column=1, padx=5)
-        ttk.Button(btn_frame, text="Load").grid(row=0, column=2, padx=5)
-        ttk.Button(btn_frame, text="Reset").grid(row=0, column=3, padx=5)
+        ttk.Button(btn_frame, text="Apply", command=self.apply).grid(row=0, column=0, padx=5)
+        ttk.Button(btn_frame, text="Save", command=self.param_manager.save_params).grid(row=0, column=1, padx=5)
+        ttk.Button(btn_frame, text="Load", command=self.param_manager.load_params).grid(row=0, column=2, padx=5)
+        ttk.Button(btn_frame, text="Reset", command=self.param_manager.reset_params).grid(row=0, column=3, padx=5)
 
     def apply(self):
         mode = self.mode_var.get()
