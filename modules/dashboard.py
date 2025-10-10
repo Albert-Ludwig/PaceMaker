@@ -7,14 +7,22 @@ from .mode_config import ParamEnum
 MODES = list(ParamEnum.MODES.keys())
 _defaults_obj = ParamEnum()
 DEFAULT_PARAMS = {
-    "Lower Rate Limit": _defaults_obj.get_default_lrl(),
-    "Upper Rate Limit": _defaults_obj.get_default_url(),
-    "Atrial Amplitude": _defaults_obj.get_default_amplitude(),
-    "Atrial Pulse Width": _defaults_obj.get_default_pulse_width(),
-    "Ventricular Amplitude": _defaults_obj.get_default_amplitude(),
-    "Ventricular Pulse Width": _defaults_obj.get_default_pulse_width(),
-    "VRP": _defaults_obj.get_default_vrp(),
-    "ARP": _defaults_obj.get_default_arp(),
+    # D1
+    "Lower_Rate_Limit":        _defaults_obj.get_Lower_Rate_Limit(),
+    "Upper_Rate_Limit":        _defaults_obj.get_Upper_Rate_Limit(),
+    "Atrial_Amplitude":        _defaults_obj.get_Atrial_Amplitude(),
+    "Ventricular_Amplitude":   _defaults_obj.get_Ventricular_Amplitude(),
+    "Atrial_Pulse_Width":      _defaults_obj.get_Atrial_Pulse_Width(),
+    "Ventricular_Pulse_Width": _defaults_obj.get_Ventricular_Pulse_Width(),
+    "ARP":                     _defaults_obj.get_ARP(),
+    "VRP":                     _defaults_obj.get_VRP(),
+
+    # D2
+    # "Maximum_Sensor_Rate":     _defaults_obj.Maximum_Sensor_Rate,
+    # "Activity_Threshold":      _defaults_obj.Activity_Threshold,
+    # "Response_Factor":         _defaults_obj.Response_Factor,
+    # "Reaction_Time":           _defaults_obj.Reaction_Time,
+    # "Recovery_Time":           _defaults_obj.Recovery_Time
 }
 
 class DCMInterface:
