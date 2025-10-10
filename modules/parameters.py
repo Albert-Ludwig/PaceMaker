@@ -106,10 +106,11 @@ class ParameterWindow:
 
         btn_frame = ttk.Frame(self.param_win)
         btn_frame.pack(pady=10)
-        ttk.Button(btn_frame, text="Apply", command=self.apply).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Load", command=self.load).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Reset", command=self.reset).pack(side="left", padx=5)
+
+        ttk.Button(btn_frame, text="Apply").grid(row=0, column=0, padx=5)
+        ttk.Button(btn_frame, text="Save").grid(row=0, column=1, padx=5)
+        ttk.Button(btn_frame, text="Load").grid(row=0, column=2, padx=5)
+        ttk.Button(btn_frame, text="Reset").grid(row=0, column=3, padx=5)
 
     def apply(self):
         mode = self.mode_var.get()
@@ -132,4 +133,4 @@ class ParameterWindow:
                 entry.delete(0, tk.END)
                 entry.insert(0, str(getter()))
         messagebox.showinfo("Apply Mode", f"Mode {mode} applied.")
-        # self.param_win.destroy() # Uncomment to close window after apply
+        self.param_win.destroy() # Uncomment to close window after apply

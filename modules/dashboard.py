@@ -61,7 +61,7 @@ class DCMInterface:
 
         # View Parameters button
         view_params_btn = ttk.Button(self.root, text="View Parameters", command=self.open_param_window)
-        view_params_btn.place(x=10, y=50)
+        view_params_btn.place(relx=0.5, y=200, anchor="center")
 
         # Status indicators
         self.status_label = ttk.Label(self.root, text="", font=("Arial", 12))
