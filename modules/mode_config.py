@@ -156,6 +156,8 @@ class ParamEnum:
                 raise ValueError("Lower_Rate_Limit out of range [30,175] bpm")
 
             y = max(30, min(175, y))
+            if hasattr(self, "Upper_Rate_Limit") and y > float(self.Upper_Rate_Limit):
+                raise ValueError("Lower_Rate_Limit must be less than or equal to Upper_Rate_Limit")
             self.Lower_Rate_Limit = int(y)
 
     # for upper rate limit, stepping in 5 ppm and range [50,175]
