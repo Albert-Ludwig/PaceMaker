@@ -94,6 +94,22 @@ class ParameterWindow:
 
         # Parameter inputs in popup
         self.param_entries = {}
+
+       
+        def _update_entry_states(*_):
+            mode = self.mode_var.get()
+            required = set(ParamEnum.MODES.get(mode, set()))  
+            for name, entry in self.param_entries.items():
+                if name in required:
+                    entry.configure(state="normal")  
+                else:
+                    entry.configure(state="disabled") 
+
+     
+        self.mode_var.trace_add("write", lambda *_: _update_entry_states())
+        self.param_win.after(0, _update_entry_states)
+
+
         for param in DEFAULT_PARAMS:
             frame = ttk.Frame(self.param_win); frame.pack(pady=3)
             ttk.Label(frame, text=f"{param}:").pack(side="left")
@@ -115,22 +131,47 @@ class ParameterWindow:
     def apply(self):
         mode = self.mode_var.get()
         errors = []
-        for key, entry in self.param_entries.items():
-            setter = self.param_manager._resolve_method(self.param_manager.param, self.param_manager._setter_candidates_for_key(key))
+
+        for name, entry in self.param_entries.items():
+            if str(entry.cget("state")) == "disabled":
+                continue
+            setter = self.param_manager._resolve_method(
+                self.param_manager.param,
+                self.param_manager._setter_candidates_for_key(name)
+            )
             if not setter:
-                errors.append(f"{key}: setter not found")
+                errors.append(f"{name}: setter not found")
                 continue
             try:
                 setter(entry.get())
             except Exception as e:
-                errors.append(f"{key}: {e}")
+                errors.append(f"{name}: {e}")
+
         if errors:
             messagebox.showerror("Invalid Input", "\n".join(errors))
             return
-        for key, entry in self.param_entries.items():
-            getter = self.param_manager._resolve_method(self.param_manager.param, self.param_manager._getter_candidates_for_key(key))
+
+        for name, entry in self.param_entries.items():
+            getter = self.param_manager._resolve_method(
+                self.param_manager.param,
+                self.param_manager._getter_candidates_for_key(name)
+            )
             if getter:
-                entry.delete(0, tk.END)
-                entry.insert(0, str(getter()))
+                try:
+                    val = getter()
+                    entry.configure(state="normal")
+                    entry.delete(0, tk.END)
+                    entry.insert(0, str(val))
+                except Exception:
+                    pass
+
+        def _update_entry_states_apply():
+            required = set(ParamEnum.MODES.get(mode, set()))
+            for name, entry in self.param_entries.items():
+                if name in required:
+                    entry.configure(state="normal")
+                else:
+                    entry.configure(state="disabled")
+        self.param_win.after(0, _update_entry_states_apply)
+
         messagebox.showinfo("Apply Mode", f"Mode {mode} applied.")
-        self.param_win.destroy() # Uncomment to close window after apply

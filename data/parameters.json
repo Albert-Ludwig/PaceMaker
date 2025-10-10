@@ -1,5 +1,5 @@
 {
-  "Lower_Rate_Limit": 60,
+  "Lower_Rate_Limit": 64,
   "Upper_Rate_Limit": 120,
   "Atrial_Amplitude": 3.5,
   "Ventricular_Amplitude": 3.5,
