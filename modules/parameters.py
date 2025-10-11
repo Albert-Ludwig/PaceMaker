@@ -85,6 +85,7 @@ class ParameterWindow:
         self.param_win.title("Parameter Settings")
         self.param_win.geometry("500x700")
         self.param_manager = param_manager
+        self.param_win.protocol("WM_DELETE_WINDOW", self._on_close)
 
         ttk.Label(self.param_win, text="Programmable Parameters", font=("Arial", 14)).pack(pady=10)
 
@@ -95,7 +96,6 @@ class ParameterWindow:
 
         # Parameter inputs in popup
         self.param_entries = {}
-
        
         def _update_entry_states(*_):
             mode = self.mode_var.get()
@@ -203,7 +203,7 @@ class ParameterWindow:
             self.apply_btn.configure(state="normal")
         except Exception:
             pass
-        messagebox.showinfo("Saved", "Rounded and saved.")
+        messagebox.showinfo("Saved", "The newest input values are rounded and saved.")
 
     def apply(self):
         if not getattr(self, "_saved_ok", False):
@@ -211,9 +211,7 @@ class ParameterWindow:
                 self.apply_btn.configure(state="disabled")
             except Exception:
                 pass
-            from tkinter import messagebox
-            messagebox.showwarning("Unsaved Changes", "The new changes on parameters have not saved")
-            return
+            
         mode = self.mode_var.get()
         required = set(ParamEnum.MODES.get(mode, set()))
         for name, entry in self.param_entries.items():
@@ -223,4 +221,14 @@ class ParameterWindow:
                 entry.configure(state="disabled")
         from tkinter import messagebox
         messagebox.showinfo("Apply", f"Mode {mode} applied.")
+
+    def _on_close(self):
+    
+        if not getattr(self, "_saved_ok", False):
+            if not messagebox.askokcancel(
+                "Unsaved Changes",
+                "The new changes on parameters have not saved. Close anyway?"
+            ):
+                return
+        self.param_win.destroy()
 
