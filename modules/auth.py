@@ -33,3 +33,24 @@ def login_user(name, password):
         if u["name"] == name and u["password"] == hashed:
             return "Login successful"
     return "Invalid credentials"
+
+def logout_and_delete(self):
+    from tkinter import messagebox
+    if not getattr(self, "username", None):
+        messagebox.showerror("Error", "No active user.")
+        return
+    confirm = messagebox.askyesno("Confirm Log Out", "Are you sure you want to log out this account?")
+    if not confirm:
+        return
+    try:
+        users = load_users()
+    except Exception:
+        users = []
+    new_users = [u for u in users if u.get("name") != self.username]
+    try:
+        save_users(new_users)
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to delete account: {e}")
+        return
+    messagebox.showinfo("Logged Out", "Account removed and signed out.")
+    self.sign_out()
