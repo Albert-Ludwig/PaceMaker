@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import json
 from .mode_config import ParamEnum
-from modules.parameters import ParameterManager, ParameterWindow
+from modules.ParamOps import ParameterManager, ParameterWindow
 
 # import the modes, parameters, and default values from mode_config.py
 MODES = list(ParamEnum.MODES.keys())
