@@ -1,7 +1,6 @@
 # This files contains the 
 import tkinter as tk
 from tkinter import ttk, messagebox
-import json
 from .mode_config import ParamEnum
 from modules.ParamOps import ParameterManager, ParameterWindow
 
@@ -51,6 +50,10 @@ class DCMInterface:
         signout_btn = ttk.Button(self.root, text="Sign Out", command=self.sign_out)
         signout_btn.place(x=10, y=10)
 
+        # log out button
+        logout_btn = ttk.Button(self.root, text="Log Out", command=self.confirm_logout)
+        logout_btn.place(x=10, y=50)
+
         # View Parameters button
         view_params_btn = ttk.Button(self.root, text="View Parameters", command=self.open_param_window)
         view_params_btn.place(relx=0.5, y=200, anchor="center")
@@ -89,6 +92,19 @@ class DCMInterface:
         self.root.destroy()
         import main
         main.main()
+
+    def confirm_logout(self):
+        from tkinter import messagebox
+        response = messagebox.askokcancel("Confirm Logout", "This account will be logged out")
+        if response:
+            from modules.auth import logout_account
+            success = logout_account(self.username, "data/users.json")  
+            if success:
+                messagebox.showinfo("Success", "Account has been logged out.")
+                self.sign_out()  
+            else:
+                messagebox.showerror("Error", "Failed to log out. Account not found.")
+
 
     def open_param_window(self):
         ParameterWindow(self.root, self.param_manager)

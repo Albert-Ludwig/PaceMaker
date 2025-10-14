@@ -34,3 +34,24 @@ def login_user(name, password):
             return "Login successful"
     return "Invalid credentials"
 
+def logout_account(username, user_data_file):
+    import json, os
+
+    if not os.path.exists(user_data_file):
+        return False
+    
+    try:
+        with open(user_data_file, "r") as f:
+            users = json.load(f)
+        
+        original_count = len(users)
+        users = [u for u in users if u.get("name") != username]
+        
+        if len(users) < original_count:  
+            with open(user_data_file, "w") as f:
+                json.dump(users, f, indent=2)
+            return True
+        else:
+            return False  
+    except Exception:
+        return False

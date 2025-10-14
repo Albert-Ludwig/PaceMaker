@@ -82,7 +82,7 @@ class ParameterManager:
 class ParameterWindow:
     def __init__(self, parent, param_manager):
         self.param_win = tk.Toplevel(parent)
-        self._saved_ok = False
+        self._saved_ok = True
         self.param_win.title("Parameter Settings")
         self.param_win.geometry("500x700")
         self.param_manager = param_manager
