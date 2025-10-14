@@ -1,4 +1,4 @@
-# first, the class is constructed to store and verify parameters
+# This class is used to store the mode and essential parameters; and, the getter and setter interfece also be finished in this file.
 
 class ParamEnum:
     MODES = {
