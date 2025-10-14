@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
-from .Mode_Config import ParamEnum
+from .mode_config import ParamEnum
 
 MODES = list(ParamEnum.MODES.keys())
 _defaults_obj = ParamEnum()

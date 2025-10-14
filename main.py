@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
-from modules.auth import register_user, login_user, logout_and_delete
-from modules.Dashboard import DashboardWindow
+from modules.auth import register_user, login_user
+from modules.dashboard import DashboardWindow
 
 class WelcomeWindow:
     def __init__(self, root):
