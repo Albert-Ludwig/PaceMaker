@@ -90,7 +90,6 @@ class DCMInterface:
         import main
         main.main()
 
-
     def open_param_window(self):
         ParameterWindow(self.root, self.param_manager)
 
