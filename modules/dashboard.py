@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
-from .Mode_Config import ParamEnum
+from .mode_config import ParamEnum
 from modules.ParamOps import ParameterManager, ParameterWindow
 
 # import the modes, parameters, and default values from mode_config.py
@@ -38,19 +38,10 @@ class DCMInterface:
         self.last_device_id = "PACEMAKER-001"  # Simulate stored device ID
         self.is_connected = True  # Simulated connection status
 
-
-    def __init__(self, root, username):
-        self.root = root
-        self.root.title("DCM Interface")
-        self.root.geometry("900x700")
-        self.username = username
-
-        self.device_id = "PACEMAKER-001"
-        self.last_device_id = "PACEMAKER-001"  # Simulate stored device ID
-        self.is_connected = True  # Simulated connection status
-
         self.param_manager = ParameterManager()
         self.entries = {param: str(self.param_manager.defaults[param]) for param in self.param_manager.defaults}
+        self.mode_var = tk.StringVar()
+        self.mode_var.set(MODES[0] if MODES else "AOO")
         self.create_widgets()
 
     def create_widgets(self):
