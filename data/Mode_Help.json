@@ -1,1 +1,62 @@
-111
+{
+  "pacemaker_modes": [
+    {
+      "mode_name": "AOO",
+      "full_name": "Atrial Asynchronous Pacing",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "None",
+      "response_to_sensing": "None (no sensing, no inhibition)",
+      "purpose": "Delivers pulses to the atrium at a fixed rate; the pacemaker continues to function regardless of the patient's intrinsic P waves. Commonly used for device testing or when the patient lacks atrial rhythm.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)", 
+        "Atrial_Amplitude (V)",
+        "Atrial_Pulse_Width (ms)"
+      ]
+    },
+    {
+      "mode_name": "VOO",
+      "full_name": "Ventricular Asynchronous Pacing", 
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "None",
+      "response_to_sensing": "None (no sensing, no inhibition)",
+      "purpose": "Delivers pulses to the ventricle at fixed intervals; pacing continues even if intrinsic QRS complexes are present. Used for complete AV block or to maintain a fixed rate in emergencies.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)"
+      ]
+    },
+    {
+      "mode_name": "AAI",
+      "full_name": "Atrial Demand Pacing / Atrial Inhibited",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "Atrium", 
+      "response_to_sensing": "Inhibit (pacing inhibition)",
+      "purpose": "The pacemaker senses atrial P waves; if intrinsic P waves are detected, output is inhibited. Otherwise, it paces at the LRL interval. Suitable for sinus node dysfunction with normal AV conduction.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Atrial_Amplitude (V)", 
+        "Atrial_Pulse_Width (ms)",
+        "ARP (ms, Atrial Refractory Period)"
+      ]
+    },
+    {
+      "mode_name": "VVI",
+      "full_name": "Ventricular Demand Pacing / Ventricular Inhibited",
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "Ventricle",
+      "response_to_sensing": "Inhibit (pacing inhibition)", 
+      "purpose": "Senses ventricular QRS waves; if intrinsic ventricular contractions are detected, pacing is inhibited. Otherwise, it delivers pulses after the LRL interval. Used for AV conduction block or bradycardia.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)", 
+        "VRP (ms, Ventricular Refractory Period)"
+      ]
+    }
+  ]
+}

@@ -29,4 +29,8 @@ Relational Hierarchy:
 4. dashboard，需要用 mode_config 和 ParamOps。
 5. main，需要用到 auth 和 dashboard。
 
-目前不需要 storage 和 validation，已经删除。
+改动：
+
+1. 目前不需要 storage 和 validation，已经删除。
+2. 新增两个 json：mode 和 param help，存储 mode 和 parameter 信息，并且在 dashboard 被调用。
+3. dashboard 新增 help widget，并且新增相应的 class，有专门函数可以把 json 转换为表格形式。

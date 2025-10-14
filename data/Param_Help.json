@@ -1,3 +1,68 @@
 {
-    
+  "parameters": [
+    {
+      "name": "Lower_Rate_Limit",
+      "dataType": "int",
+      "unit": "bpm",
+      "validRange": "30–50 (step 5), 50–90 (step 1), 90–175 (step 5) and < URL",
+      "description": "Lower pacing rate limit. Heart rate cannot fall below this value; used to calculate timing cycles (RR = 60000/LRL ms).",
+      "applicableModes": ["AOO", "VOO", "AAI", "VVI"]
+    },
+    {
+      "name": "Upper_Rate_Limit",
+      "dataType": "int",
+      "unit": "bpm",
+      "validRange": "50–175 (step 5) and > LRL",
+      "description": "Upper pacing rate limit. Restricts maximum pacing frequency.",
+      "applicableModes": ["AOO", "VOO", "AAI", "VVI"]
+    },
+    {
+      "name": "Atrial_Amplitude",
+      "dataType": "float",
+      "unit": "V",
+      "validRange": "0.5–3.2 (step 0.1) or 3.5–7.0 (step 0.5)",
+      "description": "Atrial pacing pulse voltage amplitude, determines stimulation intensity.",
+      "applicableModes": ["AOO", "AAI"]
+    },
+    {
+      "name": "Atrial_Pulse_Width",
+      "dataType": "float",
+      "unit": "ms",
+      "validRange": "0.05 (discrete value) or 0.10–1.90 (step 0.10)",
+      "description": "Atrial pacing pulse width, combined with amplitude determines energy delivery.",
+      "applicableModes": ["AOO", "AAI"]
+    },
+    {
+      "name": "Ventricular_Amplitude",
+      "dataType": "float",
+      "unit": "V",
+      "validRange": "0.5–3.2 (step 0.1) or 3.5–7.0 (step 0.5)",
+      "description": "Ventricular pacing pulse voltage amplitude.",
+      "applicableModes": ["VOO", "VVI"]
+    },
+    {
+      "name": "Ventricular_Pulse_Width",
+      "dataType": "float",
+      "unit": "ms",
+      "validRange": "0.05 or 0.10–1.90 (step 0.10)",
+      "description": "Ventricular pacing pulse width.",
+      "applicableModes": ["VOO", "VVI"]
+    },
+    {
+      "name": "ARP",
+      "dataType": "int",
+      "unit": "ms",
+      "validRange": "150–500 (step 10)",
+      "description": "Atrial Refractory Period: Used in AAI to ignore signals post-pacing and prevent false triggering.",
+      "applicableModes": ["AAI"]
+    },
+    {
+      "name": "VRP",
+      "dataType": "int",
+      "unit": "ms",
+      "validRange": "150–500 (step 10)",
+      "description": "Ventricular Refractory Period: Used in VVI to ignore T-waves etc. and prevent false sensing.",
+      "applicableModes": ["VVI"]
+    }
+  ]
 }
