@@ -68,6 +68,10 @@ class DCMInterface:
         self.warning_label = ttk.Label(self.root, text="", font=("Arial", 12), foreground="orange")
         self.warning_label.pack(pady=5)
 
+        # help button
+        help_btn = ttk.Button(self.root, text="Help", command=self.open_help_window)
+        help_btn.place(x=10, y=650)
+
         self.update_status()
 
     def apply_mode(self):
@@ -105,9 +109,84 @@ class DCMInterface:
             else:
                 messagebox.showerror("Error", "Failed to log out. Account not found.")
 
-
     def open_param_window(self):
         ParameterWindow(self.root, self.param_manager)
+    
+    def open_help_window(self):
+        HelpWindow(self.root)
 
 class DashboardWindow(DCMInterface):
     pass
+
+class HelpWindow:
+    def __init__(self, parent):
+        self.help_win = tk.Toplevel(parent)
+        self.help_win.title("Help Documentation")
+        self.help_win.geometry("800x600")
+        
+        # Create main frame
+        main_frame = ttk.Frame(self.help_win)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create left sidebar for navigation
+        self.sidebar = ttk.Frame(main_frame, width=150)
+        self.sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
+        self.sidebar.pack_propagate(False)
+        
+        # Create right content area
+        self.content_area = ttk.Frame(main_frame)
+        self.content_area.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+        
+        # Add navigation options
+        ttk.Label(self.sidebar, text="Help Topics", font=("Arial", 12, "bold")).pack(pady=10)
+        
+        # Create navigation buttons
+        self.topics = {
+            "Param description": "Parameter descriptions will be displayed here.",
+            "Mode description": "Mode descriptions will be displayed here."
+        }
+        
+        self.current_topic = tk.StringVar()
+        
+        for topic in self.topics.keys():
+            ttk.Radiobutton(
+                self.sidebar, 
+                text=topic, 
+                variable=self.current_topic,
+                value=topic,
+                command=self.update_content
+            ).pack(anchor="w", pady=5)
+        
+        # Set default topic
+        self.current_topic.set("Param description")
+        
+        # Create content display
+        self.content_text = tk.Text(
+            self.content_area, 
+            wrap=tk.WORD, 
+            font=("Arial", 11),
+            padx=10, 
+            pady=10
+        )
+        self.content_text.pack(fill=tk.BOTH, expand=True)
+        
+        # Add scrollbar to content
+        scrollbar = ttk.Scrollbar(self.content_text, orient="vertical", command=self.content_text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.content_text.config(yscrollcommand=scrollbar.set)
+        
+        # Initialize content
+        self.update_content()
+        
+        # Make text read-only
+        self.content_text.config(state=tk.DISABLED)
+    
+    def update_content(self):
+        """Update the content area based on selected topic"""
+        topic = self.current_topic.get()
+        content = self.topics.get(topic, "Content not available.")
+        
+        self.content_text.config(state=tk.NORMAL)
+        self.content_text.delete(1.0, tk.END)
+        self.content_text.insert(1.0, content)
+        self.content_text.config(state=tk.DISABLED)
