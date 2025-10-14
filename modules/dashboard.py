@@ -1,7 +1,7 @@
 # This files contains the 
 import tkinter as tk
 from tkinter import ttk, messagebox
-from .mode_config import ParamEnum
+from modules.mode_config import ParamEnum
 from modules.ParamOps import ParameterManager, ParameterWindow
 
 # import the modes, parameters, and default values from mode_config.py
@@ -140,11 +140,7 @@ class HelpWindow:
         # Add navigation options
         ttk.Label(self.sidebar, text="Help Topics", font=("Arial", 12, "bold")).pack(pady=10)
         
-        # Create navigation buttons
-        self.topics = {
-            "Param description": "Parameter descriptions will be displayed here.",
-            "Mode description": "Mode descriptions will be displayed here."
-        }
+        self.topics = self.load_help_content()
         
         self.current_topic = tk.StringVar()
         
@@ -158,7 +154,8 @@ class HelpWindow:
             ).pack(anchor="w", pady=5)
         
         # Set default topic
-        self.current_topic.set("Param description")
+        if self.topics:
+            self.current_topic.set(list(self.topics.keys())[0])
         
         # Create content display
         self.content_text = tk.Text(
@@ -181,8 +178,28 @@ class HelpWindow:
         # Make text read-only
         self.content_text.config(state=tk.DISABLED)
     
+    def load_help_content(self):
+        import json
+        import os
+        topic_files = {
+            "Param description": "data/Param_Help.json",
+            "Mode description": "data/Mode_Help.json"
+        }
+        content = {}
+        
+        for topic, file_path in topic_files.items():
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r") as f:
+                        content[topic] = json.load(f)
+                except (json.JSONDecodeError, IOError):
+                    content[topic] = f"Error loading {file_path}"
+            else:
+                content[topic] = f"File not found: {file_path}"
+        
+        return content
+    
     def update_content(self):
-        """Update the content area based on selected topic"""
         topic = self.current_topic.get()
         content = self.topics.get(topic, "Content not available.")
         
