@@ -205,190 +205,171 @@ class HelpWindow:
             widget.destroy()
         
         if topic == "Param description":
-            self._display_param_table(content)
+            self._display_param_document(content)
         elif topic == "Mode description":
-            self._display_mode_table(content)
+            self._display_mode_document(content)
         else:
             self._display_text_content(content)
 
-    def _display_param_table(self, content):
-        """Display parameter information in a table format"""
-        table_frame = ttk.Frame(self.content_area)
-        table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        ttk.Label(table_frame, text="Parameter Descriptions",
-                font=("Arial", 16, "bold")).pack(pady=(0, 15))
-
-        tree = ttk.Treeview(
-            table_frame,
-            columns=("Name", "DataType", "Unit", "Range", "Description", "Modes"),
-            show="headings", height=20
-        )
-
-        tree.heading("Name", text="Name")
-        tree.heading("DataType", text="Data Type")
-        tree.heading("Unit", text="Unit")
-        tree.heading("Range", text="Valid Range")
-        tree.heading("Description", text="Description")
-        tree.heading("Modes", text="Applicable Modes")
-
-        tree.column("Name", width=160)
-        tree.column("DataType", width=100)
-        tree.column("Unit", width=80)
-        tree.column("Range", width=120)
-        tree.column("Description", width=300)
-        tree.column("Modes", width=150)
-
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        tree.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        if isinstance(content, dict) and "parameters" in content:
-            for param in content["parameters"]:
-                param_name = param.get("name") or param.get("Name") or "Unknown"
-                data_type = param.get("dataType", "N/A")
-                unit = param.get("unit", "N/A")
-                valid_range = param.get("validRange", "N/A")
-                description = param.get("description", "No description available")
-                modes = ", ".join(param.get("applicableModes", [])) if param.get("applicableModes") else "All"
-                tree.insert("", "end",
-                            values=(param_name, data_type, unit, valid_range, description, modes))
-        elif isinstance(content, str):
-            ttk.Label(table_frame, text=content, foreground="red").pack(pady=20)
-    
-    def _display_mode_table(self, content):
-        """Display mode information in a table format"""
-        # Create frame for table
-        table_frame = ttk.Frame(self.content_area)
-        table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    def _display_param_document(self, content):
+        """Display parameter information in document format"""
+        # Create frame for document
+        doc_frame = ttk.Frame(self.content_area)
+        doc_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Create title
-        title_label = ttk.Label(table_frame, text="Pacing Modes Description", 
-                            font=("Arial", 16, "bold"))
-        title_label.pack(pady=(0, 15))
-        
-        # Create treeview for table
-        tree = ttk.Treeview(table_frame, columns=("Mode", "Pacing Chamber", "Sensing Chamber", 
-                                                "Response", "Purpose", "Parameters"), 
-                        show="headings", height=20)
-        
-        # Define headings
-        tree.heading("Mode", text="Mode")
-        tree.heading("Pacing Chamber", text="Pacing Chamber")
-        tree.heading("Sensing Chamber", text="Sensing Chamber")
-        tree.heading("Response", text="Response to Sensing")
-        tree.heading("Purpose", text="Purpose / Meaning")
-        tree.heading("Parameters", text="Required Parameters")
-        
-        # Define column widths
-        tree.column("Mode", width=80)
-        tree.column("Pacing Chamber", width=120)
-        tree.column("Sensing Chamber", width=120)
-        tree.column("Response", width=150)
-        tree.column("Purpose", width=300)
-        tree.column("Parameters", width=200)
+        # Create text widget
+        text_widget = tk.Text(doc_frame, wrap=tk.WORD, font=("Arial", 14), padx=10, pady=10)
+        text_widget.pack(fill=tk.BOTH, expand=True)
         
         # Add scrollbar
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        
-        # Pack tree and scrollbar
-        tree.pack(side="left", fill="both", expand=True)
+        scrollbar = ttk.Scrollbar(text_widget, orient="vertical", command=text_widget.yview)
         scrollbar.pack(side="right", fill="y")
+        text_widget.config(yscrollcommand=scrollbar.set)
         
-        # Populate table with data
-        if isinstance(content, dict):
-            # Check for different possible JSON structures
-            if "pacemaker_modes" in content:
-                # Structure: {"pacemaker_modes": [{...}, {...}]}
-                modes = content["pacemaker_modes"]
-                for mode in modes:
-                    mode_name = mode.get("mode_name", mode.get("name", "Unknown"))
-                    pacing_chamber = mode.get("pacing_chamber", mode.get("pacingChamber", "N/A"))
-                    sensing_chamber = mode.get("sensing_chamber", mode.get("sensingChamber", "N/A"))
-                    response = mode.get("response_to_sensing", mode.get("response", "N/A"))
-                    purpose = mode.get("purpose", mode.get("description", "No description available"))
-                    
-                    # Format parameters as comma-separated string
-                    params = mode.get("required_parameters", [])
-                    if isinstance(params, list):
-                        params_str = ", ".join(params)
-                    else:
-                        params_str = str(params)
-                    
-                    tree.insert("", "end", values=(mode_name, pacing_chamber, sensing_chamber, 
-                                                response, purpose, params_str))
+        # Configure text tags for formatting
+        text_widget.tag_configure("title", font=("Arial", 16, "bold"), foreground="navy")
+        text_widget.tag_configure("heading", font=("Arial", 14, "bold"), foreground="darkblue")
+        text_widget.tag_configure("label", font=("Arial", 12, "bold"))
+        text_widget.tag_configure("value", font=("Arial", 12))
+        
+        # Add title
+        text_widget.insert(tk.END, "Parameter Descriptions\n", "title")
+        text_widget.insert(tk.END, "\n")
+        
+        # Display content
+        if isinstance(content, dict) and "parameters" in content:
+            parameters = content["parameters"]
             
-            elif "modes" in content:
-                # Structure: {"modes": [{...}, {...}]}
-                modes = content["modes"]
-                for mode in modes:
-                    mode_name = mode.get("name", "Unknown")
-                    pacing_chamber = mode.get("pacing_chamber", "N/A")
-                    sensing_chamber = mode.get("sensing_chamber", "N/A")
-                    response = mode.get("response", "N/A")
-                    purpose = mode.get("description", "No description available")
-                    
-                    # Format parameters as comma-separated string
-                    params = mode.get("parameters", [])
-                    if isinstance(params, list):
-                        params_str = ", ".join(params)
-                    else:
-                        params_str = str(params)
-                    
-                    tree.insert("", "end", values=(mode_name, pacing_chamber, sensing_chamber, 
-                                                response, purpose, params_str))
-            
-            else:
-                # Try to find any list of modes in the dictionary
-                modes_found = False
-                for key, value in content.items():
-                    if isinstance(value, list):
-                        for item in value:
-                            if isinstance(item, dict) and ("name" in item or "mode_name" in item):
-                                modes_found = True
-                                mode_name = item.get("name", item.get("mode_name", "Unknown"))
-                                pacing_chamber = item.get("pacing_chamber", "N/A")
-                                sensing_chamber = item.get("sensing_chamber", "N/A")
-                                response = item.get("response", "N/A")
-                                purpose = item.get("description", "No description available")
-                                
-                                # Format parameters as comma-separated string
-                                params = item.get("parameters", [])
-                                if isinstance(params, list):
-                                    params_str = ", ".join(params)
-                                else:
-                                    params_str = str(params)
-                                
-                                tree.insert("", "end", values=(mode_name, pacing_chamber, sensing_chamber, 
-                                                            response, purpose, params_str))
+            for i, param in enumerate(parameters):
+                # Parameter name as heading
+                param_name = param.get("name", "Unknown Parameter")
+                text_widget.insert(tk.END, f"{param_name}\n", "heading")
                 
-                if not modes_found:
-                    # Fallback: display as text
-                    text_widget = tk.Text(table_frame, wrap=tk.WORD, font=("Arial", 11))
-                    text_widget.pack(fill=tk.BOTH, expand=True)
-                    text_widget.insert(1.0, f"Unexpected content structure:\n\n{json.dumps(content, indent=2)}")
-                    text_widget.config(state=tk.DISABLED)
-                    return
+                # Data type
+                text_widget.insert(tk.END, "Data Type: ", "label")
+                text_widget.insert(tk.END, f"{param.get('dataType', 'N/A')}\n", "value")
+                
+                # Unit
+                text_widget.insert(tk.END, "Unit: ", "label")
+                text_widget.insert(tk.END, f"{param.get('unit', 'N/A')}\n", "value")
+                
+                # Valid range
+                text_widget.insert(tk.END, "Valid Range: ", "label")
+                text_widget.insert(tk.END, f"{param.get('validRange', 'N/A')}\n", "value")
+                
+                # Description
+                text_widget.insert(tk.END, "Description: ", "label")
+                text_widget.insert(tk.END, f"{param.get('description', 'No description available')}\n", "value")
+                
+                # Applicable modes
+                modes = ", ".join(param.get('applicableModes', [])) if param.get('applicableModes') else "All"
+                text_widget.insert(tk.END, "Applicable Modes: ", "label")
+                text_widget.insert(tk.END, f"{modes}\n", "value")
+                
+                # Add separator between parameters (except after the last one)
+                if i < len(parameters) - 1:
+                    text_widget.insert(tk.END, "\n" + "="*80 + "\n\n")
+                else:
+                    text_widget.insert(tk.END, "\n")
         
         elif isinstance(content, str):
-            # Display error message if content is a string (error occurred)
-            error_label = ttk.Label(table_frame, text=content, foreground="red")
-            error_label.pack(pady=20)
-        else:
-            # Fallback: display as text
-            text_widget = tk.Text(table_frame, wrap=tk.WORD, font=("Arial", 11))
-            text_widget.pack(fill=tk.BOTH, expand=True)
-            text_widget.insert(1.0, f"Content structure: {type(content)}\n\n{content}")
-            text_widget.config(state=tk.DISABLED)
+            text_widget.insert(tk.END, content, "value")
+        
+        text_widget.config(state=tk.DISABLED)
+
+    def _display_mode_document(self, content):
+        """Display mode information in document format"""
+        # Create frame for document
+        doc_frame = ttk.Frame(self.content_area)
+        doc_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create text widget
+        text_widget = tk.Text(doc_frame, wrap=tk.WORD, font=("Arial", 14), padx=10, pady=10)
+        text_widget.pack(fill=tk.BOTH, expand=True)
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(text_widget, orient="vertical", command=text_widget.yview)
+        scrollbar.pack(side="right", fill="y")
+        text_widget.config(yscrollcommand=scrollbar.set)
+        
+        # Configure text tags for formatting
+        text_widget.tag_configure("title", font=("Arial", 16, "bold"), foreground="navy")
+        text_widget.tag_configure("heading", font=("Arial", 12, "bold"), foreground="darkblue")
+        text_widget.tag_configure("label", font=("Arial", 12, "bold"))
+        text_widget.tag_configure("value", font=("Arial", 12))
+        
+        # Add title
+        text_widget.insert(tk.END, "Pacing Modes Description\n", "title")
+        text_widget.insert(tk.END, "\n")
+        
+        # Display content
+        if isinstance(content, dict):
+            # Check for different possible JSON structures
+            modes = []
+            
+            if "pacemaker_modes" in content:
+                modes = content["pacemaker_modes"]
+            elif "modes" in content:
+                modes = content["modes"]
+            else:
+                # Try to find any list of modes in the dictionary
+                for key, value in content.items():
+                    if isinstance(value, list):
+                        modes = value
+                        break
+            
+            if modes:
+                for i, mode in enumerate(modes):
+                    # Mode name as heading
+                    mode_name = mode.get("mode_name", mode.get("name", "Unknown Mode"))
+                    text_widget.insert(tk.END, f"{mode_name}\n", "heading")
+                    
+                    # Pacing chamber
+                    text_widget.insert(tk.END, "Pacing Chamber: ", "label")
+                    text_widget.insert(tk.END, f"{mode.get('pacing_chamber', mode.get('pacingChamber', 'N/A'))}\n", "value")
+                    
+                    # Sensing chamber
+                    text_widget.insert(tk.END, "Sensing Chamber: ", "label")
+                    text_widget.insert(tk.END, f"{mode.get('sensing_chamber', mode.get('sensingChamber', 'N/A'))}\n", "value")
+                    
+                    # Response to sensing
+                    text_widget.insert(tk.END, "Response to Sensing: ", "label")
+                    text_widget.insert(tk.END, f"{mode.get('response_to_sensing', mode.get('response', 'N/A'))}\n", "value")
+                    
+                    # Purpose/description
+                    text_widget.insert(tk.END, "Purpose/Description: ", "label")
+                    text_widget.insert(tk.END, f"{mode.get('purpose', mode.get('description', 'No description available'))}\n", "value")
+                    
+                    # Required parameters
+                    params = mode.get("required_parameters", mode.get("parameters", []))
+                    if isinstance(params, list):
+                        params_str = ", ".join(params)
+                    else:
+                        params_str = str(params)
+                    
+                    text_widget.insert(tk.END, "Required Parameters: ", "label")
+                    text_widget.insert(tk.END, f"{params_str}\n", "value")
+                    
+                    # Add separator between modes (except after the last one)
+                    if i < len(modes) - 1:
+                        text_widget.insert(tk.END, "\n" + "="*80 + "\n\n")
+                    else:
+                        text_widget.insert(tk.END, "\n")
+            else:
+                text_widget.insert(tk.END, "No mode information found in the content.\n", "value")
+                text_widget.insert(tk.END, f"Content structure: {json.dumps(content, indent=2)}", "value")
+        
+        elif isinstance(content, str):
+            text_widget.insert(tk.END, content, "value")
+        
+        text_widget.config(state=tk.DISABLED)
 
     def _display_text_content(self, content):
         """Display generic text content"""
         text_widget = tk.Text(
             self.content_area, 
             wrap=tk.WORD, 
-            font=("Arial", 11),
+            font=("Arial", 14),
             padx=10, 
             pady=10
         )
