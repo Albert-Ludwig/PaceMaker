@@ -4,6 +4,7 @@
 import time, threading, struct, tkinter as tk, queue
 from tkinter import ttk, Canvas
 from collections import deque
+from tkinter import messagebox
 
 class EgramModel:
     def __init__(self, time_span_s=8.0, sample_rate=200, gain=1.0, hp_filter_ecg=False):
@@ -229,10 +230,19 @@ class EgramWindow:
         control_frame.pack(fill=tk.X, padx=10, pady=5)
         
         # Add control buttons
-        ttk.Button(control_frame, text="Start", command=self.start_egram).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Stop", command=self.stop_egram).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Clear", command=self.clear_egram).pack(side=tk.LEFT, padx=5)
+        self.start_btn = ttk.Button(control_frame, text="Start", command=self.start_egram)
+        self.start_btn.pack(side=tk.LEFT, padx=5)
+
+        self.stop_btn = ttk.Button(control_frame, text="Stop", command=self.stop_egram)
+        self.stop_btn.pack(side=tk.LEFT, padx=5)
+
+        self.clear_btn = ttk.Button(control_frame, text="Clear", command=self.clear_egram)
+        self.clear_btn.pack(side=tk.LEFT, padx=5)
         
+        # state of the EGdiagram
+        self._is_running = False
+        self._update_buttons()
+
         ttk.Label(control_frame, text="Zoom:").pack(side=tk.LEFT, padx=(10, 2))
         for z in (0.5, 1, 2):
             ttk.Button(
@@ -265,24 +275,46 @@ class EgramWindow:
     
     def start_egram(self):
         """Start EGdiagram data stream"""
-        if self.controller and self.controller.running:
+        if self._is_running:
+            messagebox.showwarning("Warning", "Egram is already running. Please press Stop first.")
             return
             
-        # Create mock data source
+        # Create mock data source, will be replaced by real data source in D2
         source = MockEgramSource()
         self.controller = EgramController(self.model, self.canvas, source, self.window)
         self.controller.start()
+        self._is_running = True
+        self._update_buttons()
     
     def stop_egram(self):
         """Stop EGdiagram data stream"""
-        if self.controller:
-            self.controller.stop()
+        try:
+            if self.controller:
+                self.controller.stop()
+        except Exception:
+            pass
+        
+        # the serial port will be achieved in D2.
+
+        self._is_running = False
+        self._update_buttons()
     
     def clear_egram(self):
         """Clear EGdiagram display"""
-        self.model.buffers["Atrial EGM"].clear()
-        self.model.buffers["Ventricular EGM"].clear()
-        self.model.buffers["Surface ECG"].clear()
+        if self._is_running:
+            messagebox.showwarning("Warning", "Stop the Egram before clearing.")
+            return
+
+        ok = messagebox.askyesno(
+            "Confirm",
+            "This option will clear the history signal, still want to clear?"
+        )
+        if not ok:
+            return
+
+        for ch in self.model.buffers:
+            self.model.buffers[ch].clear()
+
         self.canvas.render(self.model)
     
     def update_display(self):
@@ -292,9 +324,31 @@ class EgramWindow:
         self.canvas.render(self.model)
     
     def on_close(self):
-        """Handle window close event"""
-        self.stop_egram()
+        if getattr(self, "_is_running", False):
+            ok = messagebox.askyesno(
+                "Confirm Exit",
+                "Egram is still running. Do you want to stop and close the window?"
+            )
+            if not ok:
+                return
+            try:
+                self.stop_egram()
+            except Exception:
+                pass
         self.window.destroy()
+
+    
+    def _update_buttons(self):
+        """Update button states based on running status"""
+        if self._is_running:
+            self.start_btn.state(["disabled"])
+            self.clear_btn.state(["disabled"])
+            self.stop_btn.state(["!disabled"])
+        else:
+            self.start_btn.state(["!disabled"])
+            self.clear_btn.state(["!disabled"])
+            self.stop_btn.state(["disabled"])
+
 
 # temp file, will be delete and replaced by serial comm in D2.
 class MockEgramSource:
