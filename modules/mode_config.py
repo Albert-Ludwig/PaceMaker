@@ -1,4 +1,4 @@
-# This class is used to store the mode and essential parameters; and, the getter and setter interfece also be finished in this file.
+# This class is used to store the mode and essential parameters (the enum); and, the getter and setter interfece also be finished in this file.
 
 class ParamEnum:
     MODES = {

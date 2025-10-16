@@ -1,4 +1,4 @@
-# This files contains the 
+# This files contains the all windows operations, including the pop up/close and display.
 import tkinter as tk
 from tkinter import ttk, messagebox
 from modules.mode_config import ParamEnum
@@ -34,10 +34,14 @@ class DCMInterface:
         self.root.title("DCM Interface")
         self.root.geometry("900x700")
         self.username = username
-
+        
+        #@@@ D1: Only keep the boolean rather than read the serial communication.
         self.device_id = "PACEMAKER-001"
-        self.last_device_id = "PACEMAKER-001"  # Simulate stored device ID
-        self.is_connected = True  # Simulated connection status
+        self.last_device_id = "PACEMAKER-002" 
+        self.is_connected = True 
+        self.out_of_range = True
+        self.noise_unstable = True
+        #@@@ end
 
         self.param_manager = ParameterManager()
         self.entries = {param: str(self.param_manager.defaults[param]) for param in self.param_manager.defaults}
@@ -58,23 +62,32 @@ class DCMInterface:
 
         # View Parameters button
         view_params_btn = ttk.Button(self.root, text="View Parameters", command=self.open_param_window)
-        view_params_btn.place(relx=0.5, y=200, anchor="center")
+        view_params_btn.place(relx=0.5, y=240, anchor="center")
 
         # Status indicators
         self.status_label = ttk.Label(self.root, text="", font=("Arial", 12))
-        self.status_label.pack(pady=10)
+        self.status_label.pack(pady=(20, 5)) 
 
         self.device_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.device_label.pack(pady=5)
 
-        self.warning_label = ttk.Label(self.root, text="", font=("Arial", 12), foreground="orange")
-        self.warning_label.pack(pady=5)
+        self.new_device_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
+        self.new_device_warning_label.pack(pady=5)
+
+        self.noise_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
+        self.noise_warning_label.pack(pady=5)
+
+        self.out_of_range_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
+        self.out_of_range_warning_label.pack(pady=5)
 
         # help button
         help_btn = ttk.Button(self.root, text="Help", command=self.open_help_window)
         help_btn.place(x=10, y=650)
 
         self.update_status()
+        self.check_device_identity()
+        self.out_of_range_detection()
+        self.noise_unstable_detection()
 
     def apply_mode(self):
         mode = self.mode_var.get()
@@ -87,12 +100,24 @@ class DCMInterface:
         else:
             self.status_label.config(text="Status: Disconnected ❌", foreground="red")
         self.device_label.config(text=f"Device ID: {self.device_id}")
+    
+    def noise_unstable_detection(self):
+        if self.noise_unstable:
+            self.noise_warning_label.config(text="⚠️ Noise/Unstable serial connection!", foreground="yellow")
+        else:
+            self.noise_warning_label.config(text="")
+
+    def out_of_range_detection(self):
+        if self.out_of_range:
+            self.out_of_range_warning_label.config(text="⚠️ Communication out of range!", foreground="yellow")
+        else:
+            self.out_of_range_warning_label.config(text="")
 
     def check_device_identity(self):
         if self.device_id != self.last_device_id:
-            self.warning_label.config(text="⚠️ New device detected!")
+            self.new_device_warning_label.config(text="🔔 New device detected!", foreground="orange")
         else:
-            self.warning_label.config(text="")
+            self.new_device_warning_label.config(text="")
 
     def sign_out(self):
         self.root.destroy()

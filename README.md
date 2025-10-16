@@ -34,3 +34,7 @@ Relational Hierarchy:
 1. 目前不需要 storage 和 validation，已经删除。
 2. 新增两个 json：mode 和 param help，存储 mode 和 parameter 信息，并且在 dashboard 被调用。
 3. dashboard 新增 help widget，并且新增相应的 class，有专门函数可以把 json 转换为文档形式。初步已完成 help window。
+
+# 10/15
+
+增加指示灯 out of range 和 noise，定性为 warning，并且新增 communication 和 EG 文件，用来定义 serial communication 和 EG 画图。
