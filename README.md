@@ -28,6 +28,8 @@ Relational Hierarchy:
 3. ParamOps，需要用 mode_config。
 4. dashboard，需要用 mode_config 和 ParamOps。
 5. main，需要用到 auth 和 dashboard。
+6. EGdiagram，目前为底层实现，leaf module，后期可能会用到comm。
+7. Comm，目前暂时未实现
 
 改动：
 
