@@ -50,7 +50,7 @@ class DCMInterface:
         self.create_widgets()
 
     def create_widgets(self):
-        ttk.Label(self.root, text=f"Welcome, {self.username}", font=("Arial", 18)).pack(pady=10)
+        ttk.Label(self.root, text=f"Welcome, {self.username}", font=("Arial", 18)).pack(pady=30)
 
         # Sign out button
         signout_btn = ttk.Button(self.root, text="Sign Out", command=self.sign_out)
@@ -62,11 +62,11 @@ class DCMInterface:
 
         # View Parameters button
         view_params_btn = ttk.Button(self.root, text="View Parameters", command=self.open_param_window)
-        view_params_btn.place(relx=0.5, y=240, anchor="center")
+        view_params_btn.place(relx=0.5, y=320, anchor="center")
 
         # Status indicators
         self.status_label = ttk.Label(self.root, text="", font=("Arial", 12))
-        self.status_label.pack(pady=(20, 5)) 
+        self.status_label.pack(pady=(2, 5)) 
 
         self.device_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.device_label.pack(pady=5)
