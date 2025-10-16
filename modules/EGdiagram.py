@@ -63,6 +63,7 @@ class EgramView(tk.Canvas):
         super().__init__(parent, bg="white", **kw)
         self.show = {"Atrial EGM": True, "Ventricular EGM": True, "Surface ECG": True}
         self.colors = {"Atrial EGM":"red", "Ventricular EGM":"green", "Surface ECG":"blue"}
+        self.zoom = 1.0 # Zoom factor 
         # Pan state (in seconds)
         self.pan_offset_s = 0.0
         self._drag_x = None
@@ -152,7 +153,7 @@ class EgramView(tk.Canvas):
                 if t > t1:
                     break
                 x = margin_left + (t - t0)*sx
-                y = y_mid - v*sy  # Upward is positive
+                y = y_mid - (v * self.zoom) * sy
                 pts += [x,y]
             return pts
 
@@ -161,6 +162,15 @@ class EgramView(tk.Canvas):
             pts = to_xy(model.buffers[ch])
             if len(pts)>=4:
                 self.create_line(*pts, fill=self.colors[ch], width=2, smooth=False)
+    
+        label = f"X{self.zoom:g}"
+        self.create_text(
+            self.winfo_width() - 8, 12,
+            text=label,
+            anchor="ne",
+            fill="blue",
+            font=("TkDefaultFont", 12, "bold")
+        )
 
     def _draw_grid(self, w, h, span_s):
         # Grid with margins
@@ -200,13 +210,19 @@ class EgramView(tk.Canvas):
         # X axis label
         self.create_text(margin_left + plot_w/2, h - 10, text="Time", anchor="center",
                         fill="#000", font=("TkDefaultFont", 12))
+    
+    def set_zoom(self, factor: float):
+        """Set the zoom factor"""
+        self.zoom = factor
+        if hasattr(self, "_last_model"):
+            self.render(self._last_model)
 
 
 class EgramWindow:
     def __init__(self, parent):
         self.window = tk.Toplevel(parent)
         self.window.title("EG Diagram")
-        self.window.geometry("800x600")
+        self.window.geometry("1100x700")
         
         # Create control panel
         control_frame = ttk.Frame(self.window)
@@ -216,6 +232,14 @@ class EgramWindow:
         ttk.Button(control_frame, text="Start", command=self.start_egram).pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="Stop", command=self.stop_egram).pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="Clear", command=self.clear_egram).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Label(control_frame, text="Zoom:").pack(side=tk.LEFT, padx=(10, 2))
+        for z in (0.5, 1, 2):
+            ttk.Button(
+                control_frame,
+                text=f"X{z}",
+                command=lambda f=z: self.canvas.set_zoom(f)
+            ).pack(side=tk.LEFT, padx=2)
         
         # Add channel selection
         self.channel_vars = {
@@ -272,10 +296,11 @@ class EgramWindow:
         self.stop_egram()
         self.window.destroy()
 
+# temp file, will be delete and replaced by serial comm in D2.
 class MockEgramSource:
     """Mock EGdiagram data source"""
     def __init__(self):
-        self.sample_rate = 200  # Sampling rate
+        self.sample_rate = 200
         self.time = 0.0
         
     def stream(self):
