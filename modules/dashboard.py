@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from modules.mode_config import ParamEnum
 from modules.ParamOps import ParameterManager, ParameterWindow
+from modules.EGdiagram import EgramWindow
 import json
 import os
 
@@ -37,12 +38,13 @@ class DCMInterface:
         
         #@@@ D1: Only keep the boolean rather than read the serial communication.
         self.device_id = "PACEMAKER-001"
-        self.last_device_id = "PACEMAKER-002" 
+        self.last_device_id = "PACEMAKER-001" 
         self.is_connected = True 
-        self.out_of_range = True
-        self.noise_unstable = True
+        self.out_of_range = False
+        self.noise_unstable = False
         #@@@ end
 
+        self.egram_window = None
         self.param_manager = ParameterManager()
         self.entries = {param: str(self.param_manager.defaults[param]) for param in self.param_manager.defaults}
         self.mode_var = tk.StringVar()
@@ -63,6 +65,10 @@ class DCMInterface:
         # View Parameters button
         view_params_btn = ttk.Button(self.root, text="View Parameters", command=self.open_param_window)
         view_params_btn.place(relx=0.5, y=320, anchor="center")
+
+        # EG diagram button
+        eg_diagram_btn = ttk.Button(self.root, text="EG Diagram", command=self.open_egram_window)
+        eg_diagram_btn.place(relx=0.5, y=360, anchor="center")
 
         # Status indicators
         self.status_label = ttk.Label(self.root, text="", font=("Arial", 12))
@@ -103,19 +109,19 @@ class DCMInterface:
     
     def noise_unstable_detection(self):
         if self.noise_unstable:
-            self.noise_warning_label.config(text="⚠️ Noise/Unstable serial connection!", foreground="yellow")
+            self.noise_warning_label.config(text="⚠️ Noise/Unstable serial connection!", foreground="orange")
         else:
             self.noise_warning_label.config(text="")
 
     def out_of_range_detection(self):
         if self.out_of_range:
-            self.out_of_range_warning_label.config(text="⚠️ Communication out of range!", foreground="yellow")
+            self.out_of_range_warning_label.config(text="⚠️ Communication out of range!", foreground="orange")
         else:
             self.out_of_range_warning_label.config(text="")
 
     def check_device_identity(self):
         if self.device_id != self.last_device_id:
-            self.new_device_warning_label.config(text="🔔 New device detected!", foreground="orange")
+            self.new_device_warning_label.config(text="🔔 New device detected!", foreground="red")
         else:
             self.new_device_warning_label.config(text="")
 
@@ -147,6 +153,23 @@ class DCMInterface:
         
         # Create new help window
         self.help_window = HelpWindow(self.root)
+    
+    def open_egram_window(self):
+        """Open the EG diagram window"""
+        try:
+            # 检查是否已存在且窗口有效
+            if (self.egram_window and 
+                hasattr(self.egram_window, 'window') and 
+                self.egram_window.window.winfo_exists()):
+                self.egram_window.window.lift()  # 提到前台
+                return
+        except tk.TclError:
+            # 窗口已被销毁，重置引用
+            self.egram_window = None
+        
+        # 创建新的EGdiagram窗口
+        self.egram_window = EgramWindow(self.root)
+    
 
 class DashboardWindow(DCMInterface):
     pass

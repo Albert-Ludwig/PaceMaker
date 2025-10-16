@@ -38,3 +38,7 @@ Relational Hierarchy:
 # 10/15
 
 增加指示灯 out of range 和 noise，定性为 warning，并且新增 communication 和 EG 文件，用来定义 serial communication 和 EG 画图。
+
+# 10/16
+
+实现了 EGdiagram，在 dashboard 新增 def open_egram_window(self):，以及 self.egram_window = None 作为初始化。
