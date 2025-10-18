@@ -97,26 +97,53 @@ Notes
 ## Structure chart
 
 ```text
-main.py
-└─ App.run()
-├─ \_show_login() ──(calls)──► auth.login_account(...) [if auth is present]
-└─ \_open_dashboard(username)
-└─ DashboardWindow(root, username) [dashboard.py]
-├─ open_help_window()
-│ └─ HelpWindow(root) [Help_Window.py]
-│ └─ load help JSON from /data and render topics
-│
-├─ open_egram()
-│ └─ EgramWindow(root) [EGdiagram.py]
-│ ├─ start_egram()
-│ │ └─ EgramController.start() → background thread feeds queue
-│ ├─ stop_egram() └─ EgramController.stop() (join/cleanup)
-│ └─ clear_egram() └─ clear buffers + redraw EgramView
-│
-└─ parameter ops (when needed)
-├─ ParamOps.ParameterManager (or helper funcs) [ParamOps.py]
-│ └─ uses mode_config.ParamEnum.get_default_values()
-└─ mode_config.ParamEnum / MODES [mode_config.py]
+                          ┌──────────────────────┐
+                          │       main.py        │
+                          │  (App entry & init)  │
+                          └──────────┬───────────┘
+                                     │ uses
+                 ┌───────────────────┴───────────────────┐
+                 │                                       │
+        ┌────────▼────────┐                      ┌───────▼────────┐
+        │     auth.py      │                      │  dashboard.py  │
+        │(login/identity)  │                      │ (UI coordinator) 
+        └────────┬─────────┘                      └────────┬────────┘
+                 │ reads                                        │ orchestrates
+        ┌────────▼─────────┐                    ┌───────────────┼───────────────────┐
+        │  data/users.json │                    │               │                   │
+        └──────────────────┘                    │               │                   │
+                                                │               │                   │
+                                        ┌───────▼───────┐ ┌─────▼──────────┐ ┌─────▼──────────┐
+                                        │ mode_config.py│ │parameter_window │ │  EGdiagram.py  │
+                                        │ (mode UI)     │ │   .py (editor)  │ │ (Egram module) │
+                                        └───────┬───────┘ └────────┬────────┘ └────────┬──────┘
+                                                │ uses              │ uses               │ composes
+                                                │                   │                    │
+                                         ┌──────▼────────┐   ┌──────▼──────────┐   ┌────▼───────┐
+                                         │param_enum.py  │   │parameter_manager│   │ EgramWindow│
+                                         │(constants)    │   │ .py (validate I/O)  │ (UI)       │
+                                         └───────────────┘   └───────┬──────────┘   └────┬──────┘
+                                                                     │ reads/writes      │ wires
+                                                              ┌──────▼──────────┐        │
+                                                              │data/parameters. │        │
+                                                              │      json       │        │
+                                                              └─────────────────┘        │
+                                                                                         │
+                                                         ┌─────────────── EGdiagram.py internal (MVC) ──────────────┐
+                                                         │                                                          │
+                                                         │  ┌──────────────┐   feeds   ┌──────────────┐   renders  │
+                                                         │  │ Data Source  │──────────▶│  EgramModel  │──────────▶ │
+                                                         │  │Mock/Serial   │           │ (buffers)    │   EgramView│
+                                                         │  └──────────────┘           └──────┬───────┘            │
+                                                         │                                     │                     │
+                                                         │                           drives    ▼                     │
+                                                         │                                EgramController            │
+                                                         │                                     │                     │
+                                                         │                                  updates                  │
+                                                         │                                     ▼                     │
+                                                         │                                 EgramWindow               │
+                                                         └───────────────────────────────────────────────────────────┘
+
 ```
 
 ## Uses relationship
