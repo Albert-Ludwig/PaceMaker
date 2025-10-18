@@ -249,3 +249,17 @@ class ParamEnum:
             raise ValueError("VRP out of range [150,500] ms")
         y = self._round_to_step(x, 10)
         self.VRP = int(y)
+    
+    # get all default values
+    def get_default_values(self):
+        return {
+            "Lower_Rate_Limit":        self.get_Lower_Rate_Limit(),
+            "Upper_Rate_Limit":        self.get_Upper_Rate_Limit(),
+            "Atrial_Amplitude":        self.get_Atrial_Amplitude(),
+            "Ventricular_Amplitude":   self.get_Ventricular_Amplitude(),
+            "Atrial_Pulse_Width":      self.get_Atrial_Pulse_Width(),
+            "Ventricular_Pulse_Width": self.get_Ventricular_Pulse_Width(),
+            "ARP":                     self.get_ARP(),
+            "VRP":                     self.get_VRP(),
+            # For more parameters in D2 modes, add here
+        }

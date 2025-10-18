@@ -4,18 +4,8 @@ from tkinter import ttk, messagebox
 import json
 from .mode_config import ParamEnum
 
+DEFAULT_PARAMS = ParamEnum().get_default_values()
 MODES = list(ParamEnum.MODES.keys())
-_defaults_obj = ParamEnum()
-DEFAULT_PARAMS = {
-    "Lower_Rate_Limit":        _defaults_obj.get_Lower_Rate_Limit(),
-    "Upper_Rate_Limit":        _defaults_obj.get_Upper_Rate_Limit(),
-    "Atrial_Amplitude":        _defaults_obj.get_Atrial_Amplitude(),
-    "Ventricular_Amplitude":   _defaults_obj.get_Ventricular_Amplitude(),
-    "Atrial_Pulse_Width":      _defaults_obj.get_Atrial_Pulse_Width(),
-    "Ventricular_Pulse_Width": _defaults_obj.get_Ventricular_Pulse_Width(),
-    "ARP":                     _defaults_obj.get_ARP(),
-    "VRP":                     _defaults_obj.get_VRP(),
-}
 
 class ParameterManager:
     def __init__(self):
@@ -232,4 +222,3 @@ class ParameterWindow:
             ):
                 return
         self.param_win.destroy()
-
