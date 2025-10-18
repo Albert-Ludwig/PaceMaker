@@ -1,6 +1,6 @@
 # This files contains the all windows operations, including the pop up/close and display.
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from modules.mode_config import ParamEnum
 from modules.ParamOps import ParameterManager, ParameterWindow
 from modules.EGdiagram import EgramWindow

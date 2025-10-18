@@ -273,6 +273,19 @@ class EgramWindow:
         # Set window close event
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
     
+    def _update_buttons(self):
+        """Keep Start/Stop/Clear buttons consistent with current running state."""
+        running = bool(getattr(self, "_is_running", False))
+        try:
+            # Running: Start disabled, Stop enabled, Clear disabled
+            # Stopped: Start enabled, Stop disabled, Clear enabled
+            self.start_btn.configure(state=("disabled" if running else "normal"))
+            self.stop_btn.configure(state=("normal" if running else "disabled"))
+            self.clear_btn.configure(state=("disabled" if running else "normal"))
+        except Exception:
+            # Avoid crashing UI if any widget not yet available
+            pass
+
     def start_egram(self):
         """Start EGdiagram data stream"""
         if self._is_running:
@@ -336,18 +349,6 @@ class EgramWindow:
             except Exception:
                 pass
         self.window.destroy()
-
-    
-    def _update_buttons(self):
-        """Update button states based on running status"""
-        if self._is_running:
-            self.start_btn.state(["disabled"])
-            self.clear_btn.state(["disabled"])
-            self.stop_btn.state(["!disabled"])
-        else:
-            self.start_btn.state(["!disabled"])
-            self.clear_btn.state(["!disabled"])
-            self.stop_btn.state(["disabled"])
 
 
 # temp file, will be delete and replaced by serial comm in D2.

@@ -1,18 +1,74 @@
-# Folder File Purpose:
+<!-- prettier-ignore-file -->
+<!-- markdownlint-disable-file -->
+<!-- eslint-disable -->
 
-main.py Entry point: launches login screen and dashboard. The main file should only contains the welcome window class can call the interfaces from other files.
+# The file description
 
-modules/auth.py Handles registration/login logic with password hashing
+## Files & Roles (one-liners)
 
-modules/dashboard.py Main DCM interface: mode selection, parameter input, status indicators
+- main.py
+  Application entrypoint. Boots Tk, installs a global error hook, and switches between Login and Dashboard. Keeps startup “thin”.
 
-modules/storage.py Read/write JSON files for users and parameters
+- auth.py
+  Authentication utilities (e.g., login_account, logout_account). Pure logic; no UI.
 
-data/users.json Stores up to 10 registered users
+- dashboard.py
+  Main GUI shell after login (DashboardWindow). Wires feature windows (Help, Egram), menus, and top-level actions.
 
-data/parameters.json Stores saved parameter sets
+- Help_Window.py
+  Standalone Help window (HelpWindow). Loads help topics from JSON and renders “Param description” & “Mode description”.
 
-assets/ Optional: icons, logos, style assets
+- EGdiagram.py
+  Egram (ECG/EGM) viewer window. Manages data stream (thread/queue), start/stop/clear, y-zoom display (X0.5/X1/X2), and canvas rendering.
+
+- mode_config.py
+  Parameter catalogue and pacing modes (e.g., ParamEnum, MODES, range/type defaults). Single source of truth for parameter defaults.
+
+- ParamOps.py
+  Parameter operations layer (e.g., ParameterManager or helpers): read/apply/validate parameters, fetch defaults from mode_config, persist to storage if needed.
+
+## Class diagram
+
+Notes
+• EgramController/EgramView naming follows your current EGdiagram sections (controller thread + canvas).
+• ParameterManager is the typical abstraction in ParamOps.py; if your file exposes functions instead, treat it as the same layer in the diagram.
+
+## Structure chart
+
+main.py
+└─ App.run()
+├─ \_show_login() ──(calls)──► auth.login_account(...) [if auth is present]
+└─ \_open_dashboard(username)
+└─ DashboardWindow(root, username) [dashboard.py]
+├─ open_help_window()
+│ └─ HelpWindow(root) [Help_Window.py]
+│ └─ load help JSON from /data and render topics
+│
+├─ open_egram()
+│ └─ EgramWindow(root) [EGdiagram.py]
+│ ├─ start_egram()
+│ │ └─ EgramController.start() → background thread feeds queue
+│ ├─ stop_egram() └─ EgramController.stop() (join/cleanup)
+│ └─ clear_egram() └─ clear buffers + redraw EgramView
+│
+└─ parameter ops (when needed)
+├─ ParamOps.ParameterManager (or helper funcs) [ParamOps.py]
+│ └─ uses mode_config.ParamEnum.get_default_values()
+└─ mode_config.ParamEnum / MODES [mode_config.py]
+
+## Quick coherence/coupling checklist (why this is clean)
+
+- main.py only boots, routes, and handles global errors → high cohesion (startup) / low coupling (no business details).
+
+- dashboard.py composes UI and opens sub-windows; it does not re-implement help/egram logic → clear boundaries.
+
+- Help_Window.py focuses on rendering help; JSON reading is isolated (if you moved it to a loader) → easy reuse.
+
+- EGdiagram.py keeps data thread, queue, and canvas together → one place to maintain streaming & drawing.
+
+- mode_config.py is the single source for modes & defaults → other modules query, not copy.
+
+- ParamOps.py centralizes parameter validation/apply → UI just calls it, no duplicated logic.
 
 # Johnson's own note: (Others pls don;t delete and I will delete it when finish)
 
@@ -28,7 +84,7 @@ Relational Hierarchy:
 3. ParamOps，需要用 mode_config。
 4. dashboard，需要用 mode_config 和 ParamOps。
 5. main，需要用到 auth 和 dashboard。
-6. EGdiagram，目前为底层实现，leaf module，后期可能会用到comm。
+6. EGdiagram，目前为底层实现，leaf module，后期可能会用到 comm。
 7. Comm，目前暂时未实现
 
 改动：
@@ -134,3 +190,8 @@ self.source = MockEgramSource()
 self.source = SerialEgramSource(...)
 
 即可完全替换数据源逻辑，而无需修改其他模块
+
+## 10/18
+
+新增 Help_Window 函数，这样就可以用 dashboard 直接调用 Help_Window。
+修改了 EGdiagram 里面的 update_button 方法。

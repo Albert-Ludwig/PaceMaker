@@ -96,7 +96,7 @@ class HelpWindow:
         doc_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Create text widget
-        text_widget = tk.Text(doc_frame, wrap=tk.WORD, font=("Arial", 14), padx=10, pady=10)
+        text_widget = tk.Text(doc_frame, wrap=tk.WORD, font=("Arial", 16), padx=10, pady=10)
         text_widget.pack(fill=tk.BOTH, expand=True)
         
         # Add scrollbar
