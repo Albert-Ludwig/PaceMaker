@@ -29,6 +29,7 @@
 
 ## Class diagram
 
+```text
 +------------------+           uses            +-------------------+
 |      App         |-------------------------->|  DashboardWindow  |
 | (main.py)        |                          | (dashboard.py)    |
@@ -87,7 +88,7 @@
 | +login_account()  |
 | +logout_account() |
 +-------------------+
-
+```
 
 Notes
 • EgramController/EgramView naming follows your current EGdiagram sections (controller thread + canvas).
@@ -95,6 +96,7 @@ Notes
 
 ## Structure chart
 
+```text
 main.py
 └─ App.run()
 ├─ \_show_login() ──(calls)──► auth.login_account(...) [if auth is present]
@@ -115,6 +117,7 @@ main.py
 ├─ ParamOps.ParameterManager (or helper funcs) [ParamOps.py]
 │ └─ uses mode_config.ParamEnum.get_default_values()
 └─ mode_config.ParamEnum / MODES [mode_config.py]
+```
 
 ## Quick coherence/coupling checklist (why this is clean)
 
