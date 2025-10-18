@@ -94,7 +94,7 @@ Notes
 • EgramController/EgramView naming follows your current EGdiagram sections (controller thread + canvas).
 • ParameterManager is the typical abstraction in ParamOps.py; if your file exposes functions instead, treat it as the same layer in the diagram.
 
-## Structure chart
+## Relational Hierarchy
 
 ```text
                           ┌──────────────────────┐
