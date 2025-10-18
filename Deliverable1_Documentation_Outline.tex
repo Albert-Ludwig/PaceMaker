@@ -1,0 +1,138 @@
+\documentclass{article}
+\usepackage{graphicx} 
+
+\title{Deliverable 1: Documentation Outline}
+\author{Group \#2}
+\date{Fall 2025}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Group Members}
+\begin{center}
+\begin{tabular}{l l l}
+Jeffrey Yueh & yuehj & 400495097 \\
+Johnson Ji & jih21 & 400499564 \\
+Kelby To & tok13 & 400507403 \\
+Hongliang Qi & qih25 & 400493278 \\
+\end{tabular}
+\end{center}
+
+\section{Part 1}
+
+\subsection{Introduction}
+
+\subsubsection{Purpose}
+The purpose of a pacemaker is to regulate and restore a normal heart rhythm in patients with cardiac disorders such as arrhythmias, bradycardia, and heart failure. The pacemaker accomplishes this by delivering small electrical pulses to the atria and ventricles to make the heart beat at the correct speed and pattern. 
+
+The system consists of two main components: the \textbf{Pacemaker} and the \textbf{Device Controller-Monitor (DCM)}. The Pacemaker handles sensing and pacing functions, while the DCM allows users to configure, monitor, and manage the settings of the Pacemaker.
+
+\subsubsection{Goals}
+The main goal of Deliverable 1 is to design and implement the foundational components of the Pacemaker and DCM. Specifically:
+\begin{itemize}
+    \item \textbf{Pacemaker:} Create stateflow models for AOO, VOO, AAI, and VVI modes with parameters specified in the Deliverable 1 document.
+    \item \textbf{DCM:} Develop an interface that enables user registration and login, displays pacing modes, and allows input and storage of modifiable parameters.
+    \item \textbf{Documentation:} Provide a detailed document outlining the design process, decisions, implementation, and testing procedures for the Pacemaker and DCM.
+\end{itemize}
+
+\subsubsection{Scope}
+Deliverable 1 focuses on developing the initial components of the Pacemaker and DCM. This includes:
+\begin{itemize}
+    \item Creating stateflow models for the AOO, VOO, AAI, and VVI pacing modes.
+    \item Building the DCM interface with registration, login, and parameter customization functionality.
+    \item Documenting the design and implementation process.
+\end{itemize}
+
+This deliverable does not include advanced features such as wireless communication, complex arrhythmia detection algorithms, or additional pacing modes beyond those specified. Hardware testing is limited to simulation and software verification environments.
+
+\subsection{Requirements}
+
+\subsubsection{AOO Mode}
+\textbf{Pacing:} Atrial only\\
+\textbf{Sensing:} None\\
+\textbf{Response to Sensing:} None (asynchronous)\\
+\textbf{Behaviour:} Delivers atrial pacing pulses at a fixed rate, regardless of intrinsic activity.\\
+
+\subsubsection{VOO Mode}
+\textbf{Pacing:} Ventricular only\\
+\textbf{Sensing:} None\\
+\textbf{Response to Sensing:} None (asynchronous)\\
+\textbf{Behaviour:} Delivers ventricular pacing pulses at a fixed rate, regardless of intrinsic activity.\\
+
+\subsubsection{AAI Mode}
+\textbf{Pacing:} Atrial\\
+\textbf{Sensing:} Atrial\\
+\textbf{Response to Sensing:} Inhibited\\
+\textbf{Behaviour:} Paces the atrium only if no intrinsic atrial activity is sensed within the programmed interval.\\
+
+\subsubsection{VVI Mode}
+\textbf{Pacing:} Ventricular\\
+\textbf{Sensing:} Ventricular\\
+\textbf{Response to Sensing:} Inhibited\\
+\textbf{Behaviour:} Paces the ventricle only if no intrinsic ventricular activity is sensed within the programmed interval.\\
+
+\subsection{Design}
+\subsubsection{Pacemaker}
+\subsubsection{DCM}
+
+
+In this section, you should expand on design decisions based on the requirements. Be specific about your system design and how components interact.
+
+\begin{itemize}
+    \item System architecture (major subsystems, hardware abstraction, pin mapping)
+    \item Programmable parameters (rate limits, amplitudes, pulse widths, refractory periods, etc.)
+    \item Hardware inputs and outputs (signals sensed, signals controlled)
+    \item State machine design for each pacing mode (include diagrams or tables if applicable)
+    \item Simulink diagram
+    \item Screenshots of your DCM, explaining its software structure
+\end{itemize}
+
+Explicitly explain how each design decision maps directly to the stated requirements.
+
+\section{Part 2}
+
+\subsection{Requirements Potential Changes}
+Identify requirements that may evolve in future deliverables (e.g., adding new pacing modes, communication capabilities, or additional parameters).
+
+\subsection{Design Decision Potential Changes}
+List design choices that may need revisiting (e.g., choice of libraries, interface design, architecture decisions).
+
+\subsection{Module Description}
+\begin{itemize}
+    \item Purpose of the component
+    \item Key functions/methods (public vs. internal)
+    \item Global or state variables (if any)
+    \item Interactions with other components
+\end{itemize}
+
+\subsection{Testing}
+Document test cases for each module. Each test case should include:
+
+\begin{enumerate}
+    \item Purpose of the test
+    \item Input conditions
+    \item Expected output
+    \item Actual output
+    \item Result (Pass/Fail)
+\end{enumerate}
+
+For the DCM, test registration and login, parameter input validation, mode selection, and data storage/retrieval. Depending on your system, you may need to test other components as well.
+
+\subsection{GenAI Usage}
+Provide a summary of any usage of GenAI tools in developing the model, DCM, or documentation. If no GenAI tools were used, state that explicitly.
+
+\section{General Notes}
+\begin{itemize}
+    \item This outline is based on the Deliverable 1 handout; ensure all required sections are included.
+    \item Include screenshots of Simulink diagrams and the DCM interface where applicable.
+    \item Ensure requirements are traceable to design and test cases.
+    \item Keep content concise and clear.
+    \item You may add other sections or modify this structure as needed, but these are the main expected components.
+\end{itemize}
+
+\end{document}
