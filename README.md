@@ -119,6 +119,33 @@ main.py
 └─ mode_config.ParamEnum / MODES [mode_config.py]
 ```
 
+## Uses relationship
+```text
+graph TD
+    %% Main app layer
+    A[main.py] --> B[dashboard.py]
+    A --> H[auth.py]
+
+    %% Dashboard dependencies
+    B --> C[Help_Window.py]
+    B --> D[EGdiagram.py]
+    B --> E[ParamOps.py]
+    B --> G[mode_config.py]  %% indirectly via ParamOps
+
+    %% EGdiagram internal structure
+    D --> D1[EgramController (internal thread)]
+    D --> D2[EgramView (canvas)]
+
+    %% Help_Window dependencies
+    C --> F[Load_JSON.py]   %% JSON loader module
+
+    %% Parameter manager dependency
+    E --> G[mode_config.py]
+
+    %% Authentication standalone
+    H --> |used by| A
+```
+
 ## Quick coherence/coupling checklist (why this is clean)
 
 - main.py only boots, routes, and handles global errors → high cohesion (startup) / low coupling (no business details).
