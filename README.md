@@ -29,6 +29,66 @@
 
 ## Class diagram
 
++------------------+           uses            +-------------------+
+|      App         |-------------------------->|  DashboardWindow  |
+| (main.py)        |                          | (dashboard.py)    |
++------------------+                          +-------------------+
+| - root: Tk       |                          | - root: Tk        |
+| - _dashboard     |                          | - username: str   |
+| - _login_win     |                          | - help_window     |
++------------------+                          +-------------------+
+| +run()           |                          | +open_help_window()|
+| +_show_login()   |                          | +open_egram()      |
+| +_open_dashboard()                          |                   |
++------------------+                          +-------------------+
+        |                                                |
+        | opens                                          | opens
+        v                                                v
++-------------------+                          +-------------------+
+|    HelpWindow     |                          |    EgramWindow    |
+| (Help_Window.py)  |                          | (EGdiagram.py)    |
++-------------------+                          +-------------------+
+| - topics: dict    |                          | - controller      |
+| - content_area    |                          | - canvas(view)    |
++-------------------+                          +-------------------+
+| +update_content() |                          | +start_egram()    |
+| +_display_param() |                          | +stop_egram()     |
+| +_display_mode()  |                          | +clear_egram()    |
++-------------------+                          +-------------------+
+                                                     |
+                                                     | owns
+                                                     v
+                                           +-------------------+
+                                           |   EgramView       |
+                                           | (canvas drawing)  |
+                                           +-------------------+
+                                           | +render(model)    |
+                                           | +zoom label (X…)  |
+                                           +-------------------+
+                                                     |
+                                                     | pulls data from
+                                                     v
+                                           +-------------------+
+                                           | EgramController   |
+                                           | (thread/queue)    |
+                                           +-------------------+
+
++-------------------+         used by          +-------------------+
+|   ParamEnum       |<-------------------------| ParameterManager  |
+| (mode_config.py)  |                          | (ParamOps.py)     |
++-------------------+                          +-------------------+
+| +get_default_...()|                          | +apply/update     |
+| MODES, ranges     |                          | +validate         |
++-------------------+                          +-------------------+
+
++-------------------+
+|   auth.py         |
++-------------------+
+| +login_account()  |
+| +logout_account() |
++-------------------+
+
+
 Notes
 • EgramController/EgramView naming follows your current EGdiagram sections (controller thread + canvas).
 • ParameterManager is the typical abstraction in ParamOps.py; if your file exposes functions instead, treat it as the same layer in the diagram.
