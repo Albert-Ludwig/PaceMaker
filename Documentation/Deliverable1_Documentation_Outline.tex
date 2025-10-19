@@ -1,5 +1,21 @@
 \documentclass{article}
 \usepackage{graphicx} 
+\usepackage{etoolbox}
+\usepackage[colorlinks=true, linkcolor=blue]{hyperref}
+
+\newcounter{subsubsubsection}[subsubsection]
+\renewcommand{\thesubsubsubsection}{\alph{subsubsubsection})}
+
+\newcommand{\subsubsubsection}[1]{%
+  \refstepcounter{subsubsubsection}%
+  \vspace{0.5em}%
+  \noindent{\normalsize\textbf{\textit{\thesubsubsubsection\ #1}}}\par
+  \phantomsection
+  \addcontentsline{toc}{subsubsection}{\hspace{2em}\thesubsubsubsection\ #1}%
+}
+
+
+
 
 \title{Deliverable 1: Documentation Outline}
 \author{Group \#2}
@@ -10,6 +26,7 @@
 \maketitle
 \newpage
 
+\setcounter{tocdepth}{4}
 \tableofcontents
 \newpage
 
@@ -51,34 +68,45 @@ Deliverable 1 focuses on developing the initial components of the Pacemaker and 
 This deliverable does not include advanced features such as wireless communication, complex arrhythmia detection algorithms, or additional pacing modes beyond those specified. Hardware testing is limited to simulation and software verification environments.
 
 \subsection{Requirements}
+\subsubsection{Modes}
+\subsubsubsection{AOO Mode}
+\begin{itemize}
+    \item \textbf{Pacing:} Atrial only
+    \item \textbf{Sensing:} Atrial
+    \item \textbf{Response to Sensing:} Inhibited
+    \item \textbf{Behaviour:} Paces the atrium only if no intrinsic atrial activity is sensed within the programmed interval.
+\end{itemize}
 
-\subsubsection{AOO Mode}
-\textbf{Pacing:} Atrial only\\
-\textbf{Sensing:} None\\
-\textbf{Response to Sensing:} None (asynchronous)\\
-\textbf{Behaviour:} Delivers atrial pacing pulses at a fixed rate, regardless of intrinsic activity.\\
+\subsubsubsection{VOO Mode}
+\begin{itemize}
+    \item \textbf{Pacing:} Ventricular only
+    \item \textbf{Sensing:} None
+    \item \textbf{Response to Sensing:} None (asynchronous)
+    \item \textbf{Behaviour:} Delivers ventricular pacing pulses at a fixed rate, regardless of intrinsic activity.
+\end{itemize}
 
-\subsubsection{VOO Mode}
-\textbf{Pacing:} Ventricular only\\
-\textbf{Sensing:} None\\
-\textbf{Response to Sensing:} None (asynchronous)\\
-\textbf{Behaviour:} Delivers ventricular pacing pulses at a fixed rate, regardless of intrinsic activity.\\
+\subsubsubsection{AAI Mode}
+\begin{itemize}
+    \item \textbf{Pacing:} Atrial
+    \item \textbf{Sensing:} Atrial
+    \item \textbf{Response to Sensing:} Inhibited
+    \item \textbf{Behaviour:} Paces the atrium only if no intrinsic atrial activity is sensed within the programmed interval
+\end{itemize}
 
-\subsubsection{AAI Mode}
-\textbf{Pacing:} Atrial\\
-\textbf{Sensing:} Atrial\\
-\textbf{Response to Sensing:} Inhibited\\
-\textbf{Behaviour:} Paces the atrium only if no intrinsic atrial activity is sensed within the programmed interval.\\
+\subsubsubsection{VVI Mode}
+\begin{itemize}
+    \item \textbf{Pacing:} Ventricular
+    \item \textbf{Sensing:} Ventricular
+    \item \textbf{Response to Sensing:} Inhibited
+    \item \textbf{Behaviour:} Paces the ventricle only if no intrinsic ventricular activity is sensed within the programmed interval
+\end{itemize}
 
-\subsubsection{VVI Mode}
-\textbf{Pacing:} Ventricular\\
-\textbf{Sensing:} Ventricular\\
-\textbf{Response to Sensing:} Inhibited\\
-\textbf{Behaviour:} Paces the ventricle only if no intrinsic ventricular activity is sensed within the programmed interval.\\
 
 \subsection{Design}
 \subsubsection{Pacemaker}
 \subsubsection{DCM}
+\subsubsubsection{Programmable Parameters}
+
 
 
 In this section, you should expand on design decisions based on the requirements. Be specific about your system design and how components interact.
@@ -135,4 +163,18 @@ Provide a summary of any usage of GenAI tools in developing the model, DCM, or d
     \item You may add other sections or modify this structure as needed, but these are the main expected components.
 \end{itemize}
 
+\newpage
+\section{Figures and Tables}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{Screenshot 2025-10-18 142545.png}
+	\caption{Login Screen}
+	\label{fig:login}
+\end{figure}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{Screenshot 2025-10-18 143619.png}
+	\caption{Home Screen}
+	\label{fig:home}
+\end{figure}
 \end{document}
