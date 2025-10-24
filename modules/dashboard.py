@@ -54,16 +54,16 @@ class DCMInterface:
         # Status indicators
         self.status_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.status_label.pack(pady=(2, 5)) 
-
+        # Device ID display
         self.device_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.device_label.pack(pady=5)
-
+        # Mode selection
         self.new_device_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.new_device_warning_label.pack(pady=5)
-
+      
         self.noise_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.noise_warning_label.pack(pady=5)
-
+        
         self.out_of_range_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.out_of_range_warning_label.pack(pady=5)
 
@@ -76,42 +76,42 @@ class DCMInterface:
         self.out_of_range_detection()
         self.noise_unstable_detection()
 
-    def apply_mode(self):
+    def apply_mode(self): # Apply selected mode
         mode = self.mode_var.get()
         self.status_label.config(text=f"Mode {mode} applied.")
         self.check_device_identity()
 
-    def update_status(self):
+    def update_status(self): # Update connection status and device ID
         if self.is_connected:
             self.status_label.config(text="Status: Connected ✅", foreground="green")
         else:
             self.status_label.config(text="Status: Disconnected ❌", foreground="red")
         self.device_label.config(text=f"Device ID: {self.device_id}")
     
-    def noise_unstable_detection(self):
+    def noise_unstable_detection(self): # Detect noise/unstable connection
         if self.noise_unstable:
             self.noise_warning_label.config(text="⚠️ Noise/Unstable serial connection!", foreground="orange")
         else:
             self.noise_warning_label.config(text="")
 
-    def out_of_range_detection(self):
+    def out_of_range_detection(self): # Detect out-of-range communication
         if self.out_of_range:
             self.out_of_range_warning_label.config(text="⚠️ Communication out of range!", foreground="orange")
         else:
             self.out_of_range_warning_label.config(text="")
 
-    def check_device_identity(self):
+    def check_device_identity(self): # Check for new device connection
         if self.device_id != self.last_device_id:
             self.new_device_warning_label.config(text="🔔 New device detected!", foreground="red")
         else:
             self.new_device_warning_label.config(text="")
 
-    def sign_out(self):
+    def sign_out(self): # Sign out and return to welcome window
         self.root.destroy()
         import main
         main.main()
 
-    def confirm_logout(self):
+    def confirm_logout(self): # Confirm and log out account
         from tkinter import messagebox
         response = messagebox.askokcancel("Confirm Logout", "This account will be logged out")
         if response:
@@ -123,7 +123,7 @@ class DCMInterface:
             else:
                 messagebox.showerror("Error", "Failed to log out. Account not found.")
 
-    def open_param_window(self):
+    def open_param_window(self): # Open parameter configuration window
         ParameterWindow(self.root, self.param_manager)
     
     def open_help_window(self):
