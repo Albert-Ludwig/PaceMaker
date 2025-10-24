@@ -6,7 +6,7 @@ from tkinter import ttk, Canvas
 from collections import deque
 from tkinter import messagebox
 
-class EgramModel:
+class EgramModel: # Model to hold EGdiagram data buffers
     def __init__(self, time_span_s=8.0, sample_rate=200, gain=1.0, hp_filter_ecg=False):
         self.time_span_s = time_span_s
         self.sample_rate = sample_rate
@@ -27,7 +27,7 @@ class EgramModel:
             self.buffers["Ventricular EGM"].append((t, ventricular))
             self.buffers["Surface ECG"].append((t, ecg))
 
-class EgramController:
+class EgramController: # Controller to manage data streaming and drawing
     def __init__(self, model, view, source, tk_root, refresh_ms=25):
         self.model, self.view, self.source = model, view, source
         self.tk_root, self.refresh_ms = tk_root, refresh_ms
@@ -35,22 +35,22 @@ class EgramController:
         self.running = False
         self.thread = None
 
-    def start(self):
+    def start(self): # Start data streaming and drawing
         if self.running: return
         self.running = True
         self.thread = threading.Thread(target=self._producer, daemon=True)
         self.thread.start()
         self._draw_loop()
 
-    def stop(self):
+    def stop(self): # Stop data streaming and drawing
         self.running = False
 
-    def _producer(self):
+    def _producer(self): # Data producer thread
         for chunk in self.source.stream():  # Generator: yield [(t,atrial,ventricular,ecg), ...]
             if not self.running: break
             self.q.put(chunk)
 
-    def _draw_loop(self):
+    def _draw_loop(self): # Periodic drawing in main thread
         try:
             while not self.q.empty():
                 self.model.append_batch(self.q.get_nowait())
@@ -59,7 +59,7 @@ class EgramController:
             if self.running:
                 self.tk_root.after(self.refresh_ms, self._draw_loop)
 
-class EgramView(tk.Canvas):
+class EgramView(tk.Canvas): # Canvas to render EGdiagram
     def __init__(self, parent, **kw):
         super().__init__(parent, bg="white", **kw)
         self.show = {"Atrial EGM": True, "Ventricular EGM": True, "Surface ECG": True}
@@ -75,10 +75,10 @@ class EgramView(tk.Canvas):
         self.bind("<Double-Button-1>", self._on_reset_pan)
 
     # --- Mouse handlers for panning ---
-    def _on_press(self, ev):
+    def _on_press(self, ev): # Start panning
         self._drag_x = ev.x
 
-    def _on_drag(self, ev):
+    def _on_drag(self, ev): # Update panning
         if self._drag_x is None or not hasattr(self, "_last_model"):
             return
         w = self.winfo_width()
@@ -91,15 +91,15 @@ class EgramView(tk.Canvas):
         self.pan_offset_s = max(0.0, min(self._max_pan(self._last_model), self.pan_offset_s + dx_s))
         self.render(self._last_model)
 
-    def _on_release(self, ev):
+    def _on_release(self, ev): # End panning
         self._drag_x = None
 
-    def _on_reset_pan(self, ev):
+    def _on_reset_pan(self, ev): # Double-click to reset pan
         self.pan_offset_s = 0.0
         if hasattr(self, "_last_model"):
             self.render(self._last_model)
 
-    def _max_pan(self, model):
+    def _max_pan(self, model): # Maximum pan (in seconds) available based on buffered history.
         """Maximum pan (in seconds) available based on buffered history."""
         buf = model.buffers["Surface ECG"]
         if len(buf) < 2:
@@ -219,7 +219,7 @@ class EgramView(tk.Canvas):
             self.render(self._last_model)
 
 
-class EgramWindow:
+class EgramWindow: # EGdiagram window
     def __init__(self, parent):
         self.window = tk.Toplevel(parent)
         self.window.title("EG Diagram")
