@@ -1,11 +1,19 @@
 \documentclass{article}
 \usepackage{graphicx} 
 \usepackage{etoolbox}
+\usepackage{tabularx}
 \usepackage[colorlinks=true, linkcolor=blue]{hyperref}
+\usepackage{tabularx}
+\usepackage{changepage} % for adjustwidth
+\usepackage{array} % needed for defining new column types
+\usepackage{changepage}
 
+% Define a left-aligned X column
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
 \newcounter{subsubsubsection}[subsubsection]
 \renewcommand{\thesubsubsubsection}{\alph{subsubsubsection})}
-
+\renewcommand{\arraystretch}{1.2} % row height
+\setlength{\tabcolsep}{6pt} 
 \newcommand{\subsubsubsection}[1]{%
   \refstepcounter{subsubsubsection}%
   \vspace{0.5em}%
@@ -124,32 +132,146 @@ Explicitly explain how each design decision maps directly to the stated requirem
 
 \section{Part 2}
 
-\subsection{Requirements Potential Changes}
-Identify requirements that may evolve in future deliverables (e.g., adding new pacing modes, communication capabilities, or additional parameters).
+\subsection{Requirements / Potential Changes}
+\begin{tabularx}{\textwidth}{|l|L|L|}
+\hline
+\textbf{Module} & \textbf{Requirements} & \textbf{Potential Changes / Evolution} \\
+\hline
+HelpWindow & Display help documentation for parameters and pacing modes, with navigation and formatted text. & Adding new help topics (e.g., D2 modes), support for multimedia content, or online help updates. \\
+\hline
+ParamEnum & Store pacemaker modes and parameters, provide getter and setter interfaces with validation and stepping rules. & Adding new pacing modes (D2, AOOR, etc.), new parameters for advanced therapy modes. \\
+\hline
+ParameterManager  & Manage parameter operations: save, load, reset, and apply; GUI to edit parameters based on mode. & Improve validation rules, support bulk import/export, additional GUI elements for future parameters. \\
+\hline
+WelcomeWindow & Provide login and registration functionality; launch dashboard upon successful login. & Integration with secure authentication APIs, multi-user support, and potential cloud-based storage. \\
+\hline
+\end{tabularx}
 
-\subsection{Design Decision Potential Changes}
-List design choices that may need revisiting (e.g., choice of libraries, interface design, architecture decisions).
+\subsection{Design Decision / Potential Changes}
+\begin{tabularx}{\textwidth}{|l|L|L|}
+\hline
+\textbf{Module} & \textbf{Design Decisions} & \textbf{Potential Changes / Revisions} \\
+\hline
+HelpWindow & Tkinter-based GUI; JSON files for content; text widget formatting. & Consider switching to web-based help, dynamic content loading, or modular UI frameworks. \\
+\hline
+ParamEnum & Python class with validated getters/setters; uses constants for mode definitions. & Might adopt database-driven parameters, use enums for clarity, or external config files for scalability. \\
+\hline
+ParameterManager  & GUI-bound parameter management; state tracking; method resolution via string names. & Refactor to MVC pattern, improve input validation, or integrate real-time device updates. \\
+\hline
+WelcomeWindow & Simple Tkinter GUI for login/registration; dashboard launch. & Upgrade authentication security, support OAuth, and redesign GUI for modern UX. \\
+\hline
+\end{tabularx}
 
 \subsection{Module Description}
+
+\paragraph{HelpWindow}
 \begin{itemize}
-    \item Purpose of the component
-    \item Key functions/methods (public vs. internal)
-    \item Global or state variables (if any)
-    \item Interactions with other components
+    \item \textbf{Purpose:} Display help documentation for pacemaker modes and parameters.
+    \item \textbf{Key functions/methods:} 
+        \begin{itemize}
+            \item Public: \texttt{update\_content}, \texttt{load\_help\_content} 
+            \item Internal: \texttt{\_display\_param\_document}, \texttt{\_display\_mode\_document}, \texttt{\_display\_text\_content}
+        \end{itemize}
+    \item \textbf{Global/state variables:} \texttt{topics}, \texttt{current\_topic}, \texttt{content\_area}.
+    \item \textbf{Interactions:} Reads JSON help files; updates GUI content dynamically.
+\end{itemize}
+
+\paragraph{ParamEnum}
+\begin{itemize}
+    \item \textbf{Purpose:} Store parameter values and enforce validation rules.
+    \item \textbf{Key functions/methods:}
+        \begin{itemize}
+            \item Public: getters (\texttt{get\_*}) and setters (\texttt{set\_*}), \texttt{get\_default\_values}
+            \item Internal: \texttt{\_is\_number}, \texttt{\_round\_to\_step}
+        \end{itemize}
+    \item \textbf{Global/state variables:} parameter values (e.g., \texttt{Lower\_Rate\_Limit}, \texttt{ARP}); \texttt{MODES} dictionary.
+    \item \textbf{Interactions:} Used by \texttt{ParameterManager} and GUI modules.
+\end{itemize}
+
+\paragraph{ParameterManager}
+\begin{itemize}
+    \item \textbf{Purpose:} Enable saving, loading, resetting, applying, and editing parameters through a GUI.
+    \item \textbf{Key functions/methods:}
+        \begin{itemize}
+            \item Public: \texttt{save\_params}, \texttt{load\_params}, \texttt{reset\_params}, \texttt{apply}, \texttt{save\_and\_round}
+            \item Internal: \texttt{\_resolve\_method}, \texttt{\_getter\_candidates\_for\_key}, \texttt{\_setter\_candidates\_for\_key}, \texttt{\_mark\_unsaved}, \texttt{\_on\_close}
+        \end{itemize}
+    \item \textbf{Global/state variables:} \texttt{param\_entries}, \texttt{mode\_var}, \texttt{\_saved\_ok}, \texttt{param\_manager}.
+    \item \textbf{Interactions:} Reads/writes JSON parameters; updates \texttt{ParamEnum} values; GUI reflects changes.
+\end{itemize}
+
+\paragraph{WelcomeWindow}
+\begin{itemize}
+    \item \textbf{Purpose:} Manage user authentication and launch the dashboard.
+    \item \textbf{Key functions/methods:} \texttt{register}, \texttt{login}
+    \item \textbf{Global/state variables:} \texttt{name\_entry}, \texttt{pass\_entry}, \texttt{root}.
+    \item \textbf{Interactions:} Calls \texttt{register\_user} and \texttt{login\_user}; launches \texttt{DashboardWindow}.
 \end{itemize}
 
 \subsection{Testing}
-Document test cases for each module. Each test case should include:
 
-\begin{enumerate}
-    \item Purpose of the test
-    \item Input conditions
-    \item Expected output
-    \item Actual output
-    \item Result (Pass/Fail)
-\end{enumerate}
 
-For the DCM, test registration and login, parameter input validation, mode selection, and data storage/retrieval. Depending on your system, you may need to test other components as well.
+\begin{adjustwidth}{-3cm}{-3cm} % shrink left and right margins by 1cm
+
+%-------------------------
+\textbf{HelpWindow Module}\\[2mm]
+\begin{tabular}{|p{2.5cm}|p{3.5cm}|p{3cm}|p{5cm}|p{1.5cm}|}
+\hline
+\textbf{Test Case} & \textbf{Purpose} & \textbf{Input} & \textbf{Expected Output} & \textbf{Result} \\ \hline
+Display help content & Ensure help topics load correctly & Open HelpWindow & Help text displayed for each topic, formatted correctly & Pass \\ \hline
+Switch topic & Verify topic switching & Click different topic button & Content area updates with selected topic & Pass \\ \hline
+Missing JSON file & Check error handling & Remove Param\_Help.json & Display error message in content area & Pass \\ \hline
+\end{tabular}
+
+\vspace{5pt}
+%-------------------------
+\textbf{ParamEnum Module}\\[2mm]
+\begin{tabular}{|p{3cm}|p{3.5cm}|p{4.5cm}|p{5cm}|p{1.5cm}|}
+\hline
+\textbf{Test Case} & \textbf{Purpose} & \textbf{Input} & \textbf{Expected Output} & \textbf{Result} \\ \hline
+Set Lower Rate Limit & Validate stepping rules & \raggedright \texttt{set\_Lower\_Rate\_Limit(47)} & Value rounded to nearest step (45 or 50 depending on rule) & Pass \\ \hline
+Set Upper Rate Limit & Check upper bound & \raggedright \texttt{set\_Upper\_Rate\_Limit(180)} & Error raised: out of range & Pass \\ \hline
+Get default values & Ensure getters return defaults & \raggedright \texttt{get\_default\_values()} & Dictionary with correct default values & Pass \\ \hline
+\end{tabular}
+
+
+\vspace{5pt}
+%-------------------------
+\textbf{ParameterManager Module}\\[2mm]
+\begin{tabular}{|p{3cm}|p{3.5cm}|p{3cm}|p{5cm}|p{1.5cm}|}
+\hline
+\textbf{Test Case} & \textbf{Purpose} & \textbf{Input} & \textbf{Expected Output} & \textbf{Result} \\ \hline
+Save parameters & Verify JSON saving & Edit parameters, click Save & parameters.json created/updated & Pass \\ \hline
+Load parameters & Verify JSON loading & Click Load & Entries updated with stored values & Pass \\ \hline
+Apply parameters & Check apply function & Modify parameters, click Apply & Mode applied, entries validated & Pass \\ \hline
+Reset parameters & Check reset functionality & Click Reset & All parameters revert to defaults & Pass \\ \hline
+Validation & Input invalid values & Enter 200 for Upper Rate Limit & Error message displayed & Pass \\ \hline
+\end{tabular}
+
+\vspace{5pt}
+%-------------------------
+\textbf{WelcomeWindow Module}\\[2mm]
+\begin{tabular}{|p{3cm}|p{3.5cm}|p{3cm}|p{5cm}|p{1.5cm}|}
+\hline
+\textbf{Test Case} & \textbf{Purpose} & \textbf{Input} & \textbf{Expected Output} & \textbf{Result} \\ \hline
+User registration & Validate registration & Enter name/password, click Register & Success message or error if user exists & Pass \\ \hline
+User login success & Test login workflow & Enter valid credentials, click Login & Launch DashboardWindow & Pass \\ \hline
+User login failure & Test invalid login & Enter wrong credentials & Display error message & Pass \\ \hline
+\end{tabular}
+
+
+\vspace{5pt}
+%-------------------------
+\textbf{WelcomeWindow Module}\\[2mm]
+\begin{tabular}{|p{3cm}|p{3.5cm}|p{3cm}|p{5cm}|p{1.5cm}|}
+\hline
+\textbf{Test Case} & \textbf{Purpose} & \textbf{Input} & \textbf{Expected Output} & \textbf{Result} \\ \hline
+User registration & Validate registration & Enter name/password, click Register & Success message or error if user exists & Pass \\ \hline
+User login success & Test login workflow & Enter valid credentials, click Login & Launch DashboardWindow & Pass \\ \hline
+User login failure & Test invalid login & Enter wrong credentials & Display error message & Pass \\ \hline
+\end{tabular}
+
+\end{adjustwidth}
 
 \subsection{GenAI Usage}
 Provide a summary of any usage of GenAI tools in developing the model, DCM, or documentation. If no GenAI tools were used, state that explicitly.
