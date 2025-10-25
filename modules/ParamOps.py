@@ -14,6 +14,9 @@ class ParameterManager:
 
     def save_params(self):
         try:
+            import os
+            os.makedirs("data", exist_ok=True)  # Ensure directory exists
+            
             data = {}
             for key in self.defaults:
                 getter = self._resolve_method(self.param, self._getter_candidates_for_key(key))
