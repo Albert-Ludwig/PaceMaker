@@ -25,7 +25,10 @@ class DCMInterface:
         self.noise_unstable = False
         #@@@ end
 
+        # initialize parameters
+        self.param_window = None 
         self.egram_window = None
+        self.help_window = None
         self.param_manager = ParameterManager()
         self.entries = {param: str(self.param_manager.defaults[param]) for param in self.param_manager.defaults}
         self.mode_var = tk.StringVar()
@@ -124,15 +127,30 @@ class DCMInterface:
                 messagebox.showerror("Error", "Failed to log out. Account not found.")
 
     def open_param_window(self): # Open parameter configuration window
-        ParameterWindow(self.root, self.param_manager)
+        try:
+            if (self.param_window is not None and 
+                hasattr(self.param_window, 'param_win') and 
+                self.param_window.param_win.winfo_exists()):
+                self.param_window.param_win.lift()  
+                return
+        except (tk.TclError, AttributeError):
+            # if the window was closed or attribute doesn't exist, reset param_window
+            self.param_window = None
+
+        # Create a new parameter window
+        self.param_window = ParameterWindow(self.root, self.param_manager)
     
     def open_help_window(self):
-        # Check if help window already exists
-        if hasattr(self, 'help_window') and self.help_window and self.help_window.help_win.winfo_exists():
-            self.help_window.help_win.lift()  # Bring to front if exists
-            return
-        
-        # Create new help window
+        """Open help window"""
+        try:
+            if (self.help_window is not None and 
+                hasattr(self.help_window, 'help_win') and 
+                self.help_window.help_win.winfo_exists()):
+                self.help_window.help_win.lift()
+                return
+        except (tk.TclError, AttributeError):
+            self.help_window = None
+
         self.help_window = HelpWindow(self.root)
     
     def open_egram_window(self):

@@ -34,14 +34,18 @@ class ParameterManager:
                 if setter:
                     setter(val)
             messagebox.showinfo("Load", "Parameters loaded successfully.")
+            return True  
         except FileNotFoundError:
             messagebox.showerror("Error", "No saved parameters found.")
+            return False
         except Exception as e:
             messagebox.showerror("Error", str(e))
+            return False
 
     def reset_params(self):
         self.param = ParamEnum()
         messagebox.showinfo("Reset", "Parameters reset to defaults.")
+        return True
 
     def _resolve_method(self, obj, candidates):
         for name in candidates:
@@ -124,8 +128,8 @@ class ParameterWindow:
         self.save_btn = ttk.Button(btn_frame, text="Save", command=self.save_and_round)
         self.save_btn.grid(row=0, column=1, padx=5)
 
-        ttk.Button(btn_frame, text="Load", command=self.param_manager.load_params).grid(row=0, column=2, padx=5)
-        ttk.Button(btn_frame, text="Reset", command=self.param_manager.reset_params).grid(row=0, column=3, padx=5)
+        ttk.Button(btn_frame, text="Load", command=self._load_with_refresh).grid(row=0, column=2, padx=5)
+        ttk.Button(btn_frame, text="Reset", command=self._reset_with_refresh).grid(row=0, column=3, padx=5)
 
     def _mark_unsaved(self, *args):
         self._saved_ok = False
@@ -133,6 +137,44 @@ class ParameterWindow:
             self.apply_btn.configure(state="disabled")
         except Exception:
             pass
+    
+    def _refresh_entries(self):
+        """refresh all entries based on current parameter values"""
+        for param_name, entry in self.param_entries.items():
+            getter = self.param_manager._resolve_method(
+                self.param_manager.param, 
+                self.param_manager._getter_candidates_for_key(param_name)
+            )
+            if getter:
+                current_value = getter()
+                entry.configure(state="normal")
+                entry.delete(0, "end")
+                entry.insert(0, str(current_value))
+
+        # Update entry states based on current mode
+        mode = self.mode_var.get()
+        required = set(ParamEnum.MODES.get(mode, set()))
+        for name, entry in self.param_entries.items():
+            if name in required:
+                entry.configure(state="normal")
+            else:
+                entry.configure(state="disabled")
+    
+    def _load_with_refresh(self):
+        """load parameters and refresh interface"""
+        success = self.param_manager.load_params()
+        if success:
+            self._refresh_entries()
+            self._saved_ok = True
+            self.apply_btn.configure(state="normal")
+
+    def _reset_with_refresh(self):
+        """reset parameters and refresh interface"""
+        success = self.param_manager.reset_params()
+        if success:
+            self._refresh_entries()
+            self._saved_ok = True
+            self.apply_btn.configure(state="normal")
 
     def save_and_round(self):
         import json, os

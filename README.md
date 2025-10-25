@@ -106,7 +106,7 @@ Notes
                  │                                       │
         ┌────────▼────────┐                      ┌───────▼────────┐
         │     auth.py      │                      │  dashboard.py  │
-        │(login/identity)  │                      │ (UI coordinator) 
+        │(login/identity)  │                      │ (UI coordinator)
         └────────┬─────────┘                      └────────┬────────┘
                  │ reads                                        │ orchestrates
         ┌────────▼─────────┐                    ┌───────────────┼───────────────────┐
@@ -147,6 +147,7 @@ Notes
 ```
 
 ## Uses relationship
+
 ```text
 graph TD
     %% Main app layer
@@ -312,3 +313,8 @@ self.source = SerialEgramSource(...)
 
 新增 Help_Window 函数，这样就可以用 dashboard 直接调用 Help_Window。
 修改了 EGdiagram 里面的 update_button 方法。
+
+## 10/25
+
+修改了创建多个 param 窗口，help 窗口，造成混乱的情况。
+修复了 load 和 reset 不好用的情况。
