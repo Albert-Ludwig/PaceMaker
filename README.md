@@ -26,10 +26,6 @@
 ## Class diagram
 <img width="785" height="732" alt="image" src="https://github.com/user-attachments/assets/2969876c-1b56-432d-b52a-46d885443204" />
 
-Notes
-• EgramController/EgramView naming follows your current EGdiagram sections (controller thread + canvas).
-• ParameterManager is the typical abstraction in ParamOps.py; if your file exposes functions instead, treat it as the same layer in the diagram.
-
 ## Relational Hierarchy
 
 ```text
