@@ -250,7 +250,7 @@ graph TD
 
 - ParamOps.py centralizes parameter validation/apply → UI just calls it, no duplicated logic.
 
-# Johnson's own note: (Others pls don;t delete and I will delete it when finish)
+# Johnson's own note:
 
 ## 10/14:
 
