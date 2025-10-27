@@ -5,7 +5,7 @@ USER_FILE = "data/users.json"
 
 def load_users():
     if not os.path.exists(USER_FILE):
-        return []
+        raise FileNotFoundError(f"{USER_FILE} is not created")
     with open(USER_FILE, "r") as f:
         return json.load(f)
 
