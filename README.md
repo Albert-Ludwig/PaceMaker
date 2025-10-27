@@ -30,64 +30,167 @@
 ## Class diagram
 
 ```text
-+------------------+           uses            +-------------------+
-|      App         |-------------------------->|  DashboardWindow  |
-| (main.py)        |                          | (dashboard.py)    |
-+------------------+                          +-------------------+
-| - root: Tk       |                          | - root: Tk        |
-| - _dashboard     |                          | - username: str   |
-| - _login_win     |                          | - help_window     |
-+------------------+                          +-------------------+
-| +run()           |                          | +open_help_window()|
-| +_show_login()   |                          | +open_egram()      |
-| +_open_dashboard()                          |                   |
-+------------------+                          +-------------------+
-        |                                                |
-        | opens                                          | opens
-        v                                                v
-+-------------------+                          +-------------------+
-|    HelpWindow     |                          |    EgramWindow    |
-| (Help_Window.py)  |                          | (EGdiagram.py)    |
-+-------------------+                          +-------------------+
-| - topics: dict    |                          | - controller      |
-| - content_area    |                          | - canvas(view)    |
-+-------------------+                          +-------------------+
-| +update_content() |                          | +start_egram()    |
-| +_display_param() |                          | +stop_egram()     |
-| +_display_mode()  |                          | +clear_egram()    |
-+-------------------+                          +-------------------+
-                                                     |
-                                                     | owns
-                                                     v
-                                           +-------------------+
-                                           |   EgramView       |
-                                           | (canvas drawing)  |
-                                           +-------------------+
-                                           | +render(model)    |
-                                           | +zoom label (X…)  |
-                                           +-------------------+
-                                                     |
-                                                     | pulls data from
-                                                     v
-                                           +-------------------+
-                                           | EgramController   |
-                                           | (thread/queue)    |
-                                           +-------------------+
+classDiagram
+%% ------------ UI entry ------------
+class WelcomeWindow{
+  +__init__(root)
+  +register()
+  +login()
+}
 
-+-------------------+         used by          +-------------------+
-|   ParamEnum       |<-------------------------| ParameterManager  |
-| (mode_config.py)  |                          | (ParamOps.py)     |
-+-------------------+                          +-------------------+
-| +get_default_...()|                          | +apply/update     |
-| MODES, ranges     |                          | +validate         |
-+-------------------+                          +-------------------+
+%% ------------ Dashboard ------------
+class DCMInterface{
+  -root: Tk
+  -username: str
+  -param_window: ParameterWindow?
+  -egram_window: EgramWindow?
+  -help_window: HelpWindow?
+  -param_manager: ParameterManager
+  +__init__(root, username)
+  +create_widgets()
+  +apply_mode()
+  +update_status()
+  +noise_unstable_detection()
+  +out_of_range_detection()
+  +check_device_identity()
+  +sign_out()
+  +confirm_logout()
+  +open_param_window()
+  +open_help_window()
+  +open_egram_window()
+}
 
-+-------------------+
-|   auth.py         |
-+-------------------+
-| +login_account()  |
-| +logout_account() |
-+-------------------+
+class DashboardWindow
+DashboardWindow --|> DCMInterface
+
+WelcomeWindow --> DashboardWindow : opens after login
+
+%% ------------ Help ------------
+class HelpWindow{
+  +__init__(parent)
+  -content_area
+  -topics: dict
+  +load_help_content()
+  +update_content(topic_key)
+  +_display_param_document()
+  +_display_mode_document()
+  +_display_text_content(content)
+}
+DCMInterface --> HelpWindow : opens
+
+%% ------------ Parameters ------------
+class ParamEnum{
+  +MODES
+  +__init__()
+  +get_default_values()
+  %% many getters/setters:
+  +get_/set_Lower_Rate_Limit()
+  +get_/set_Upper_Rate_Limit()
+  +get_/set_Atrial_Amplitude()
+  +get_/set_Ventricular_Amplitude()
+  +get_/set_Atrial_Pulse_Width()
+  +get_/set_Ventricular_Pulse_Width()
+  +get_/set_ARP()
+  +get_/set_VRP()
+}
+
+class ParameterManager{
+  -param: ParamEnum
+  -defaults: dict
+  +__init__()
+  +save_params()
+  +load_params()
+  +reset_params()
+  -_resolve_method(obj, candidates)
+  -_getter_candidates_for_key(key)
+  -_setter_candidates_for_key(key)
+}
+
+class ParameterWindow{
+  -param_win: Toplevel
+  -mode_var: StringVar
+  -param_entries: dict
+  -_saved_ok: bool
+  +__init__(parent, param_manager)
+  +save_and_round()
+  +apply()
+  -_refresh_entries()
+  -_load_with_refresh()
+  -_reset_with_refresh()
+  -_mark_unsaved()
+  -_on_close()
+}
+
+ParameterManager --> ParamEnum : uses
+DCMInterface --> ParameterWindow : opens
+DCMInterface --> ParameterManager : uses
+
+%% ------------ Egram ------------
+class EgramModel{
+  -time_span_s: float
+  -sample_rate: int
+  -buffers: dict
+  -gain: float
+  -hp_filter_ecg: bool
+  -markers: list
+  +__init__(time_span_s, sample_rate, gain, hp_filter_ecg)
+  +append_batch(batch)
+}
+
+class EgramView{
+  +__init__(parent)  %% subclass of tk.Canvas
+  +render(model_data)
+  +set_zoom(...)
+  -_on_press(ev)
+  -_on_drag(ev)
+  -_on_release(ev)
+  -_on_reset_pan(ev)
+  -_max_pan(model)
+  -_draw_grid(w,h,span_s)
+  -_draw_axes_and_labels(w,h)
+}
+
+class EgramController{
+  -q: Queue
+  -thread: Thread
+  -running: bool
+  +__init__(model, view, source, tk_root, refresh_ms)
+  +start()
+  +stop()
+  -_producer()
+  -_draw_loop()
+}
+
+class EgramWindow{
+  -window: Toplevel
+  -canvas: EgramView
+  -model: EgramModel
+  -controller: EgramController?
+  -_is_running: bool
+  +__init__(parent)
+  +start_egram()
+  +stop_egram()
+  +clear_egram()
+  +update_display()
+  +on_close()
+}
+
+DCMInterface --> EgramWindow : opens
+EgramWindow o--> EgramModel : owns
+EgramWindow o--> EgramView  : owns
+EgramWindow --> EgramController : uses
+EgramController --> EgramModel : updates
+EgramController --> EgramView  : renders
+
+%% ------------ Auth (module functions) ------------
+class auth<<module>>{
+  +register_user(name, pwd)
+  +login_user(name, pwd)
+  +logout_account(username, file)
+}
+WelcomeWindow ..> auth : uses
+DCMInterface ..> auth : logout
+
 ```
 
 Notes
@@ -97,53 +200,16 @@ Notes
 ## Relational Hierarchy
 
 ```text
-                          ┌──────────────────────┐
-                          │       main.py        │
-                          │  (App entry & init)  │
-                          └──────────┬───────────┘
-                                     │ uses
-                 ┌───────────────────┴───────────────────┐
-                 │                                       │
-        ┌────────▼────────┐                      ┌───────▼────────┐
-        │     auth.py      │                      │  dashboard.py  │
-        │(login/identity)  │                      │ (UI coordinator)
-        └────────┬─────────┘                      └────────┬────────┘
-                 │ reads                                        │ orchestrates
-        ┌────────▼─────────┐                    ┌───────────────┼───────────────────┐
-        │  data/users.json │                    │               │                   │
-        └──────────────────┘                    │               │                   │
-                                                │               │                   │
-                                        ┌───────▼───────┐ ┌─────▼──────────┐ ┌─────▼──────────┐
-                                        │ mode_config.py│ │parameter_window │ │  EGdiagram.py  │
-                                        │ (mode UI)     │ │   .py (editor)  │ │ (Egram module) │
-                                        └───────┬───────┘ └────────┬────────┘ └────────┬──────┘
-                                                │ uses              │ uses               │ composes
-                                                │                   │                    │
-                                         ┌──────▼────────┐   ┌──────▼──────────┐   ┌────▼───────┐
-                                         │param_enum.py  │   │parameter_manager│   │ EgramWindow│
-                                         │(constants)    │   │ .py (validate I/O)  │ (UI)       │
-                                         └───────────────┘   └───────┬──────────┘   └────┬──────┘
-                                                                     │ reads/writes      │ wires
-                                                              ┌──────▼──────────┐        │
-                                                              │data/parameters. │        │
-                                                              │      json       │        │
-                                                              └─────────────────┘        │
-                                                                                         │
-                                                         ┌─────────────── EGdiagram.py internal (MVC) ──────────────┐
-                                                         │                                                          │
-                                                         │  ┌──────────────┐   feeds   ┌──────────────┐   renders  │
-                                                         │  │ Data Source  │──────────▶│  EgramModel  │──────────▶ │
-                                                         │  │Mock/Serial   │           │ (buffers)    │   EgramView│
-                                                         │  └──────────────┘           └──────┬───────┘            │
-                                                         │                                     │                     │
-                                                         │                           drives    ▼                     │
-                                                         │                                EgramController            │
-                                                         │                                     │                     │
-                                                         │                                  updates                  │
-                                                         │                                     ▼                     │
-                                                         │                                 EgramWindow               │
-                                                         └───────────────────────────────────────────────────────────┘
-
+App (main.py)
+└─ DashboardWindow  [opened by App after login]
+   ├─ ParameterManager
+   │  └─ ParamEnum               [defaults/ranges]
+   ├─ ParameterWindow (0..1)     [opened from Dashboard; single-instance]
+   ├─ HelpWindow (0..1)          [opened from Dashboard; single-instance]
+   └─ EgramWindow (0..1)         [opened from Dashboard; single-instance]
+      ├─ EgramModel              [composition]
+      ├─ EgramView               [composition]
+      └─ EgramController (0..1)  [managed by EgramWindow: start/stop]
 ```
 
 ## Uses relationship
