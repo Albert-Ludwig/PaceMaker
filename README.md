@@ -1,7 +1,3 @@
-<!-- prettier-ignore-file -->
-<!-- markdownlint-disable-file -->
-<!-- eslint-disable -->
-
 # The file description
 
 ## Files & Roles (one-liners)
