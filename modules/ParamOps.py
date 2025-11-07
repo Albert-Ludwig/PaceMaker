@@ -94,33 +94,53 @@ class ParameterWindow:
 
         # Parameter inputs in popup
         self.param_entries = {}
-       
+
+        for param in DEFAULT_PARAMS:
+            frame = ttk.Frame(self.param_win)
+            frame.pack(pady=3)
+            ttk.Label(frame, text=f"{param}:").pack(side="left")
+            getter = self.param_manager._resolve_method(
+                self.param_manager.param, 
+                self.param_manager._getter_candidates_for_key(param)
+            )
+            value = getter() if getter else DEFAULT_PARAMS[param]
+            
+            # Special handling for Activity_Threshold - use Combobox
+            if param == "Activity_Threshold":
+                entry = ttk.Combobox(
+                    frame,
+                    values=["V-Low", "Low", "Med-Low", "Med", "Med-High", "High", "V-High"],
+                    state="readonly",
+                    width=18
+                )
+                entry.set(str(value) if value is not None else "Med")
+                entry.bind("<<ComboboxSelected>>", self._mark_unsaved)
+            else:
+                # Regular entry for other parameters
+                entry = ttk.Entry(frame)
+                entry.insert(0, str(value))
+                entry.bind("<KeyRelease>", self._mark_unsaved)
+                entry.bind("<FocusOut>", self._mark_unsaved)
+            
+            entry.pack(side="left")
+            self.param_entries[param] = entry
+
+        # Update entry states based on mode
         def _update_entry_states(*_):
             mode = self.mode_var.get()
             required = set(ParamEnum.MODES.get(mode, set()))  
             for name, entry in self.param_entries.items():
                 if name in required:
-                    entry.configure(state="normal")  
+                    # For Activity_Threshold, use readonly instead of normal
+                    if name == "Activity_Threshold":
+                        entry.configure(state="readonly")
+                    else:
+                        entry.configure(state="normal")
                 else:
                     entry.configure(state="disabled") 
 
-     
         self.mode_var.trace_add("write", lambda *_: _update_entry_states())
         self.param_win.after(0, _update_entry_states)
-
-
-        for param in DEFAULT_PARAMS:
-            frame = ttk.Frame(self.param_win); frame.pack(pady=3)
-            ttk.Label(frame, text=f"{param}:").pack(side="left")
-            getter = self.param_manager._resolve_method(self.param_manager.param, self.param_manager._getter_candidates_for_key(param))
-            value = getter() if getter else DEFAULT_PARAMS[param]
-            entry = ttk.Entry(frame)
-            entry.insert(0, str(value))
-            entry.pack(side="left")
-            self.param_entries[param] = entry
-            entry.bind("<KeyRelease>", self._mark_unsaved)
-            entry.bind("<FocusOut>", self._mark_unsaved)
-
 
         btn_frame = ttk.Frame(self.param_win)
         btn_frame.pack(pady=10)
@@ -150,16 +170,27 @@ class ParameterWindow:
             )
             if getter:
                 current_value = getter()
-                entry.configure(state="normal")
-                entry.delete(0, "end")
-                entry.insert(0, str(current_value))
+                # Temporarily enable to update value
+                if param_name == "Activity_Threshold":
+                    entry.configure(state="readonly")
+                else:
+                    entry.configure(state="normal")
+                
+                if param_name == "Activity_Threshold":
+                    entry.set(str(current_value))
+                else:
+                    entry.delete(0, "end")
+                    entry.insert(0, str(current_value))
 
         # Update entry states based on current mode
         mode = self.mode_var.get()
         required = set(ParamEnum.MODES.get(mode, set()))
         for name, entry in self.param_entries.items():
             if name in required:
-                entry.configure(state="normal")
+                if name == "Activity_Threshold":
+                    entry.configure(state="readonly")
+                else:
+                    entry.configure(state="normal")
             else:
                 entry.configure(state="disabled")
     
@@ -194,7 +225,13 @@ class ParameterWindow:
             entry = self.param_entries[name]
             if str(entry.cget("state")) == "disabled":
                 continue
-            raw = entry.get()
+            
+            # Get value from Combobox or Entry
+            if name == "Activity_Threshold":
+                raw = entry.get()
+            else:
+                raw = entry.get()
+            
             setter_name = f"set_{name}"
             if not hasattr(self.param_manager.param, setter_name):
                 errors.append(f"{name}: setter not found")
@@ -203,10 +240,13 @@ class ParameterWindow:
                 getattr(self.param_manager.param, setter_name)(raw)
             except Exception as e:
                 errors.append(f"{name}: {e}")
+        
         if errors:
             messagebox.showerror("Invalid Input", "\n".join(errors))
             self._saved_ok = False
             return
+        
+        # Refresh display with rounded values
         for name in required:
             if name not in self.param_entries:
                 continue
@@ -215,11 +255,17 @@ class ParameterWindow:
             if hasattr(self.param_manager.param, getter_name):
                 try:
                     v = getattr(self.param_manager.param, getter_name)()
-                    entry.configure(state="normal")
-                    entry.delete(0, "end")
-                    entry.insert(0, str(v))
+                    if name == "Activity_Threshold":
+                        entry.configure(state="readonly")
+                        entry.set(str(v))
+                    else:
+                        entry.configure(state="normal")
+                        entry.delete(0, "end")
+                        entry.insert(0, str(v))
                 except Exception:
                     pass
+        
+        # Save all parameters to JSON
         all_keys = set()
         for s in ParamEnum.MODES.values():
             all_keys |= set(s)
@@ -252,14 +298,15 @@ class ParameterWindow:
         required = set(ParamEnum.MODES.get(mode, set()))
         for name, entry in self.param_entries.items():
             if name in required:
-                entry.configure(state="normal")
+                if name == "Activity_Threshold":
+                    entry.configure(state="readonly")
+                else:
+                    entry.configure(state="normal")
             else:
                 entry.configure(state="disabled")
-        from tkinter import messagebox
         messagebox.showinfo("Apply", f"Mode {mode} applied.")
 
     def _on_close(self):
-    
         if not getattr(self, "_saved_ok", False):
             if not messagebox.askokcancel(
                 "Unsaved Changes",

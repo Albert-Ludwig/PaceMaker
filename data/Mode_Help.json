@@ -40,7 +40,7 @@
         "Upper_Rate_Limit (bpm)",
         "Atrial_Amplitude (V)", 
         "Atrial_Pulse_Width (ms)",
-        "ARP (ms, Atrial Refractory Period)"
+        "ARP (ms)"
       ]
     },
     {
@@ -55,7 +55,88 @@
         "Upper_Rate_Limit (bpm)",
         "Ventricular_Amplitude (V)",
         "Ventricular_Pulse_Width (ms)", 
-        "VRP (ms, Ventricular Refractory Period)"
+        "VRP (ms)"
+      ]
+    },
+    {
+      "mode_name": "AOOR",
+      "full_name": "Atrial Asynchronous Rate-Adaptive Pacing",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "Activity Sensor (no cardiac sensing)",
+      "response_to_sensing": "Rate modulation based on activity sensor input",
+      "purpose": "Fixed-rate atrial pacing with rate adaptation. Pacing rate increases with detected physical activity. No cardiac sensing, so pacing continues regardless of intrinsic atrial rhythm. Suitable for chronotropic incompetence with unreliable atrial sensing.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Atrial_Amplitude (V)",
+        "Atrial_Pulse_Width (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)"
+      ]
+    },
+    {
+      "mode_name": "VOOR",
+      "full_name": "Ventricular Asynchronous Rate-Adaptive Pacing",
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "Activity Sensor (no cardiac sensing)",
+      "response_to_sensing": "Rate modulation based on activity sensor input",
+      "purpose": "Fixed-rate ventricular pacing with rate adaptation. Pacing rate increases with activity but no intrinsic QRS sensing. Used for complete AV block with chronotropic incompetence or when ventricular sensing is unreliable.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)"
+      ]
+    },
+    {
+      "mode_name": "AAIR",
+      "full_name": "Atrial Demand Rate-Adaptive Pacing",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "Atrium + Activity Sensor",
+      "response_to_sensing": "Inhibit (pacing inhibition) + Rate modulation",
+      "purpose": "Atrial demand pacing with rate adaptation. Senses intrinsic P waves (inhibits pacing if present) and increases pacing rate with activity. Ideal for sinus node dysfunction with chronotropic incompetence and intact AV conduction.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Atrial_Amplitude (V)",
+        "Atrial_Pulse_Width (ms)",
+        "ARP (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)",
+        "Atrial_Sensitivity (V)",
+        "PVARP (ms)"
+      ]
+    },
+    {
+      "mode_name": "VVIR",
+      "full_name": "Ventricular Demand Rate-Adaptive Pacing",
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "Ventricle + Activity Sensor",
+      "response_to_sensing": "Inhibit (pacing inhibition) + Rate modulation",
+      "purpose": "Ventricular demand pacing with rate adaptation. Senses intrinsic QRS (inhibits pacing if present) and increases rate with activity. Used for AV block or bradycardia with chronotropic incompetence, especially in active patients.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)",
+        "VRP (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)",
+        "Ventricular_Sensitivity (V)"
       ]
     }
   ]

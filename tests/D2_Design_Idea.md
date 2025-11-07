@@ -9,6 +9,9 @@
 5. **参数范围/步进/容差**：按 D2 规范更新 UI 与校验
 6. **安全/日志/帮助**：故障降级、操作追溯、Help 内容更新
 7. **文档/测试支撑**：Assurance Case、Heartview 测试记录（放在报告，不在代码）
+   ![alt text](image.png)
+   ![alt text](image-1.png)
+   ![alt text](image-2.png)
 
 ### 1. mode_config
 
@@ -22,7 +25,7 @@
 ### 3. dashboard
 
 1. 需要修改状态指示灯的部分，改成从 pacemaker 读取状态然后修改 boolean 展示状态灯。
-2. 调整布局以及增加新增的参数的编辑选项
+2. 调整布局以及增加新增的参数的编辑选项，注意，activity threshold 改成下拉菜单选择而不是手动输入。
 
 ### 4. paramOps
 
@@ -35,4 +38,4 @@
 
 ### 6. Communication 和 serial
 
-创建一个 serial 的底层文件，里面实现通讯的内部细节，communication 来实现它。communication 负责实现所有读取的内容和读取什么，然后发送给其他文件。
+创建一个 serial 的底层文件，里面实现通讯的内部细节，communication 来实现它。communication 负责实现所有读取的内容和读取什么，然后发送给其他文件。读取的数据比较的函数在这里实现，然后 paramOps 调用就行，比较的容忍值按照参数表来。
