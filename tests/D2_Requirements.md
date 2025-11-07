@@ -5,8 +5,10 @@
 D2 要求新增：AOOR, VOOR, AAIR, VVIR，需要添加到面板里面，同时，开放新的所需参数（这个已经 mode_config.py 里面，同时给新增的参数设置默认值。这些新增的模式也必须遵守之前 D1 的设计，即必须能在下拉菜单里面选择，同时也能遵守相应的 stepping mode（需要在 mode_config 里面去撰写新的 stepping function，以及相应的接口。
 
 新增参数：
-![alt text](image.png)
-新增 A 和 V sensitivity，然后 Pulse width 和 amplitude 需要修改范围。
+
+- 新增 A 和 V sensitivity，范围[0, 5]V，步进 0.1V，默认值 None，tolerance 2%。
+- A 和 V pulse amplitude 改成 off 或者 range [0.1, 5.0]V，步进 0.1V，默认值 5V，tolerance 12%
+- A 和 V pulse width 改成 range [1, 30]ms，步进 1ms，默认值 1ms，tolerance 1ms。
 
 ## 2. serial communication
 
