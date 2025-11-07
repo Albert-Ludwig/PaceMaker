@@ -104,8 +104,8 @@ class ParamEnum:
         self.Response_Factor     = 8
         self.Reaction_Time       = 10         
         self.Recovery_Time       = 30
-        self.Atrial_Sensitivity   = None
-        self.Ventricular_Sensitivity = None 
+        self.Atrial_Sensitivity   = 2.5
+        self.Ventricular_Sensitivity = 2.5
         self.PVARP               = 250
 
     # D1 parameters getter interface 

@@ -1,10 +1,18 @@
 {
-  "Atrial_Amplitude": 5.0,
+  "Recovery_Time": 30,
+  "Lower_Rate_Limit": 60,
+  "PVARP": 250,
   "Atrial_Pulse_Width": 1,
-  "Ventricular_Amplitude": 5.0,
-  "Lower_Rate_Limit": 61,
-  "Upper_Rate_Limit": 120,
+  "Ventricular_Sensitivity": 0.0,
+  "Maximum_Sensor_Rate": 120,
   "ARP": 320,
   "VRP": 320,
-  "Ventricular_Pulse_Width": 1
+  "Atrial_Amplitude": 5.0,
+  "Ventricular_Amplitude": 5.0,
+  "Response_Factor": 8,
+  "Activity_Threshold": "Med",
+  "Ventricular_Pulse_Width": 1,
+  "Atrial_Sensitivity": 0.0,
+  "Upper_Rate_Limit": 120,
+  "Reaction_Time": 10
 }
