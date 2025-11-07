@@ -30,53 +30,53 @@ class ParamEnum:
             "VRP"
         },
 
-        # D2
-        # "AOOR": {
-        #     "Lower_Rate_Limit",
-        #     "Upper_Rate_Limit",
-        #     "Atrial_Amplitude",
-        #     "Atrial_Pulse_Width",
-        #     "Maximum_Sensor_Rate",
-        #     "Activity_Threshold",
-        #     "Response_Factor",
-        #     "Reaction_Time",
-        #     "Recovery_Time"
-        # },
-        # "VOOR": {
-        #     "Lower_Rate_Limit",
-        #     "Upper_Rate_Limit",
-        #     "Ventricular_Amplitude",
-        #     "Ventricular_Pulse_Width",
-        #     "Maximum_Sensor_Rate",
-        #     "Activity_Threshold",
-        #     "Response_Factor",
-        #     "Reaction_Time",
-        #     "Recovery_Time"
-        # },
-        # "AAIR": {
-        #     "Lower_Rate_Limit",
-        #     "Upper_Rate_Limit",
-        #     "Atrial_Amplitude",
-        #     "Atrial_Pulse_Width",
-        #     "ARP",
-        #     "Maximum_Sensor_Rate",
-        #     "Activity_Threshold",
-        #     "Response_Factor",
-        #     "Reaction_Time",
-        #     "Recovery_Time"
-        # },
-        # "VVIR": {
-        #     "Lower_Rate_Limit",
-        #     "Upper_Rate_Limit",
-        #     "Ventricular_Amplitude",
-        #     "Ventricular_Pulse_Width",
-        #     "VRP",
-        #     "Maximum_Sensor_Rate",
-        #     "Activity_Threshold",
-        #     "Response_Factor",
-        #     "Reaction_Time",
-        #     "Recovery_Time"
-        # }
+        #D2
+        "AOOR": {
+            "Lower_Rate_Limit",
+            "Upper_Rate_Limit",
+            "Atrial_Amplitude",
+            "Atrial_Pulse_Width",
+            "Maximum_Sensor_Rate",
+            "Activity_Threshold",
+            "Response_Factor",
+            "Reaction_Time",
+            "Recovery_Time"
+        },
+        "VOOR": {
+            "Lower_Rate_Limit",
+            "Upper_Rate_Limit",
+            "Ventricular_Amplitude",
+            "Ventricular_Pulse_Width",
+            "Maximum_Sensor_Rate",
+            "Activity_Threshold",
+            "Response_Factor",
+            "Reaction_Time",
+            "Recovery_Time"
+        },
+        "AAIR": {
+            "Lower_Rate_Limit",
+            "Upper_Rate_Limit",
+            "Atrial_Amplitude",
+            "Atrial_Pulse_Width",
+            "ARP",
+            "Maximum_Sensor_Rate",
+            "Activity_Threshold",
+            "Response_Factor",
+            "Reaction_Time",
+            "Recovery_Time"
+        },
+        "VVIR": {
+            "Lower_Rate_Limit",
+            "Upper_Rate_Limit",
+            "Ventricular_Amplitude",
+            "Ventricular_Pulse_Width",
+            "VRP",
+            "Maximum_Sensor_Rate",
+            "Activity_Threshold",
+            "Response_Factor",
+            "Reaction_Time",
+            "Recovery_Time"
+        }
     }
     
 
@@ -85,19 +85,21 @@ class ParamEnum:
         # D1
         self.Lower_Rate_Limit = 60       
         self.Upper_Rate_Limit = 120
-        self.Atrial_Amplitude = 3.5 
-        self.Ventricular_Amplitude = 3.5  
-        self.Atrial_Pulse_Width = 0.4 
-        self.Ventricular_Pulse_Width = 0.4
+        self.Atrial_Amplitude = 5.0
+        self.Ventricular_Amplitude = 5.0
+        self.Atrial_Pulse_Width = 1
+        self.Ventricular_Pulse_Width = 1
         self.ARP                = 320
         self.VRP                = 320
 
         #D2
-        # self.Maximum_Sensor_Rate = 120
-        # self.Activity_Threshold  = 1.1        
-        # self.Response_Factor     = 8
-        # self.Reaction_Time       = 10         
-        # self.Recovery_Time       = 30  
+        self.Maximum_Sensor_Rate = 120
+        self.Activity_Threshold  = "Med"       
+        self.Response_Factor     = 8
+        self.Reaction_Time       = 10         
+        self.Recovery_Time       = 30
+        self.Atrial_Sensitivity   = None
+        self.Ventricular_Sensitivity = None  
 
     # D1 parameters getter interface 
     def get_Lower_Rate_Limit(self):
@@ -176,59 +178,46 @@ class ParamEnum:
             raise ValueError("Upper_Rate_Limit must be greater than Lower_Rate_Limit")
         self.Upper_Rate_Limit = int(y)
 
-    # for atrial amplitude, step 0.1 between [0.5,3.2], step 0.5 between [3.5,7.0], range [0.5,7.0]
+    # for atrial amplitude, step 0.1, range [0.1,5.0]
     def set_Atrial_Amplitude(self, val):
         if not self._is_number(val):
             raise TypeError("Atrial_Amplitude must be numeric")
         x = float(val)
-        if 0.5 <= x <= 3.2:
-            y = self._round_to_step(x, 0.1)                    
-        elif 3.5 <= x <= 7.0:
-            y = self._round_to_step(x, 0.5)             
+        if 0.1 <= x <= 5.0:
+            y = self._round_to_step(x, 0.1)                                 
         else:
-            raise ValueError("Atrial_Amplitude out of range: [0.5–3.2] or [3.5–7.0] V")
+            raise ValueError("Atrial_Amplitude out of range: [0.1–5.0] V")
         self.Atrial_Amplitude = y
 
-    # for ventricular amplitude, step 0.1 between [0.5,3.2], step 0.5 between [3.5,7.0], range [0.5,7.0]
+    # for ventricular amplitude, step 0.1, range [0.1,5.0]
     def set_Ventricular_Amplitude(self, val):
         if not self._is_number(val):
             raise TypeError("Ventricular_Amplitude must be numeric")
         x = float(val)
-        if 0.5 <= x <= 3.2:
-            y = round(x * 10) / 10.0
-        elif 3.5 <= x <= 7.0:
-            y = self._round_to_step(x, 0.5)
-        else:
-            raise ValueError("Ventricular_Amplitude out of range: [0.5–3.2] or [3.5–7.0] V")
-        self.Ventricular_Amplitude = y
+        if not (0.1 <= x <= 5.0):
+            raise ValueError("Ventricular_Amplitude out of range: [0.1–5.0] V")
+        y = self._round_to_step(x, 0.1)
+        self.Ventricular_Amplitude = round(y, 1)
     
-    # for atrial pulse width, step 0.1 between [0.5,3.2], step 0.5 between [3.5,7.0], range [0.5,7.0]
+    # for atrial pulse width, range [1, 30] ms, step 1 ms
     def set_Atrial_Pulse_Width(self, val):
         if not self._is_number(val):
             raise TypeError("Atrial_Pulse_Width must be numeric")
         x = float(val)
-        if abs(x - 0.05) < 1e-6:
-            y = 0.05
-        elif 0.10 <= x <= 1.90:
-            y = round((x - 0.10) / 0.10) * 0.10 + 0.10   # 0.10 步进
-            y = round(y, 2)
-        else:
-            raise ValueError("Atrial_Pulse_Width out of range: 0.05 or 0.10–1.90 ms")
-        self.Atrial_Pulse_Width = y
+        if not (1 <= x <= 30):
+            raise ValueError("Atrial_Pulse_Width out of range: [1–30] ms")
+        y = round(x)  
+        self.Atrial_Pulse_Width = int(y)
 
-    # for ventricular amplitude, step 0.1 between [0.5,3.2], step 0.5 between [3.5,7.0], range [0.5,7.0]
+    # for ventricular pulse width, range [1, 30] ms, step 1 ms
     def set_Ventricular_Pulse_Width(self, val):
         if not self._is_number(val):
             raise TypeError("Ventricular_Pulse_Width must be numeric")
         x = float(val)
-        if abs(x - 0.05) < 1e-6:
-            y = 0.05
-        elif 0.10 <= x <= 1.90:
-            y = round((x - 0.10) / 0.10) * 0.10 + 0.10
-            y = round(y, 2)
-        else:
-            raise ValueError("Ventricular_Pulse_Width out of range: 0.05 or 0.10–1.90 ms")
-        self.Ventricular_Pulse_Width = y
+        if not (1 <= x <= 30):
+            raise ValueError("Ventricular_Pulse_Width out of range: [1–30] ms")
+        y = round(x) 
+        self.Ventricular_Pulse_Width = int(y)
 
     # for atrial pulse width, step 0.1 between [0.5,3.2], step 0.5 between [3.5,7.0], range [0.5,7.0]
     def set_ARP(self, val):
