@@ -214,5 +214,5 @@ self.source = SerialEgramSource(...)
 修改了创建多个 param 窗口，help 窗口，造成混乱的情况。
 修复了 load 和 reset 不好用的情况。
 
-##11/12 D2
+## 11/12 D2
 目前完成了剩下的参数的getter和setter，以及相应接口（除了Hysteresis和rate smoothing）。准备测试serial communication。
