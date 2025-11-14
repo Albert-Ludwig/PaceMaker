@@ -226,3 +226,4 @@ self.source = SerialEgramSource(...)
 目前能连上了，并且增加了在 dashboard。
 目前第一，二，三步基本已经完成。dashboard 的指示灯部分目前实现了不同设备检测，和是否连接。
 第四步 load 已经实现好了。
+目前实现完了画图，但是很奇怪。其他机制都实现好了，但是还没实现 noise 和 out of range 的提示。
