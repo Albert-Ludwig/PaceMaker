@@ -76,8 +76,7 @@ class DCMInterface:
         help_btn.place(x=10, y=650)
 
         # port selection frame
-        port_frame = ttk.LabelFrame(self.root, text="Serial Port Configuration", padding=10)
-        # MODIFIED: Changed .pack() to .place() to move it up
+        port_frame = ttk.Frame(self.root, padding=10)
         port_frame.place(relx=0.5, y=450, anchor="center")
         
         ttk.Label(port_frame, text="Select Port:").pack(side="left", padx=5)
