@@ -21,7 +21,7 @@ class PacemakerCommunication:
     Handles all parameter upload/download operations with proper protocol formatting
     """
 
-    def __init__(self, port: str = "COM3", baudrate: int = 115200):
+    def __init__(self, port: str = "COM3", baudrate: int = 57600):
         """Initialize communication manager with serial connection parameters"""
         self.serial_mgr = SerialManager(port=port, baudrate=baudrate)
         self.is_connected = False
