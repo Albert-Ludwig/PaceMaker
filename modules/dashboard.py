@@ -6,7 +6,7 @@ from modules.ParamOps import ParameterManager, ParameterWindow
 from modules.EGdiagram import EgramWindow
 from modules.Help_Window import HelpWindow
 from modules.Communication import PacemakerCommunication
-from modules.Serial import SerialManager
+from modules.Serial_Manager import SerialManager
 
 # import the modes, parameters, and default values from mode_config.py
 DEFAULT_PARAMS = ParamEnum().get_default_values()
@@ -205,6 +205,13 @@ class DCMInterface:
 
     def toggle_connect(self):
         """Connect or disconnect serial port"""
+        if self.is_connected and self.comm_manager is not None:
+            self.comm_manager.disconnect()
+            self.is_connected = False
+            messagebox.showinfo("Disconnected", "Serial connection closed.")
+            self.update_status()
+            return
+
         selected_port = self.port_combobox.get()
         if not selected_port or "No ports" in selected_port:
             messagebox.showerror("Error", "No valid port selected")
@@ -221,6 +228,7 @@ class DCMInterface:
             messagebox.showerror("Error", f"Failed to connect to {selected_port}")
         
         self.update_status()
+
 
     def save_parameters(self):
         """Save current parameters to JSON"""

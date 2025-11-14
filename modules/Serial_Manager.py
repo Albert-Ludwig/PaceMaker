@@ -91,7 +91,9 @@ class SerialManager:
                 write_timeout=self.write_timeout,
             )
             return self.serial_port.is_open
-        except Exception:
+
+        except Exception as e:
+            print(f"[SerialManager] Error opening port {self.port}: {e}")
             self.serial_port = None
             return False
 

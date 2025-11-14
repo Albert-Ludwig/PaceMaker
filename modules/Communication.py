@@ -7,9 +7,9 @@ import struct
 import time
 
 try:
-    from .Serial import SerialManager
+    from .Serial_Manager import SerialManager
 except ImportError:
-    from Serial import SerialManager
+    from modules.Serial_Manager import SerialManager
 
 class PacemakerCommunication:
     """
