@@ -24,6 +24,7 @@
   Parameter operations layer (e.g., ParameterManager or helpers): read/apply/validate parameters, fetch defaults from mode_config, persist to storage if needed.
 
 ## Class diagram
+
 <img width="785" height="732" alt="image" src="https://github.com/user-attachments/assets/2969876c-1b56-432d-b52a-46d885443204" />
 
 ## Relational Hierarchy
@@ -215,4 +216,10 @@ self.source = SerialEgramSource(...)
 修复了 load 和 reset 不好用的情况。
 
 ## 11/12 D2
-目前完成了剩下的参数的getter和setter，以及相应接口（除了Hysteresis和rate smoothing）。准备测试serial communication。
+
+目前完成了剩下的参数的 getter 和 setter，以及相应接口（除了 Hysteresis 和 rate smoothing）。准备测试 serial communication。
+
+## 11/13
+
+目前编写了一个初步的 pytest 来测试 serial 和 communication 两个文件，均通过测试。但是连不上 device。
+修复了之前没有存储 mode 的问题。

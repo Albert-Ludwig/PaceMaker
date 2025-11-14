@@ -32,18 +32,21 @@ class ParameterManager:
         try:
             with open("data/parameters.json", "r") as f:
                 data = json.load(f)
+            
+            loaded_mode = data.pop("Pacing_Mode", None)
+            
             for key, val in data.items():
                 setter = self._resolve_method(self.param, self._setter_candidates_for_key(key))
                 if setter:
                     setter(val)
             messagebox.showinfo("Load", "Parameters loaded successfully.")
-            return True  
+            return True, loaded_mode
         except FileNotFoundError:
             messagebox.showerror("Error", "No saved parameters found.")
-            return False
+            return False, None
         except Exception as e:
             messagebox.showerror("Error", str(e))
-            return False
+            return False, None
 
     def reset_params(self):
         self.param = ParamEnum()
@@ -196,8 +199,12 @@ class ParameterWindow:
     
     def _load_with_refresh(self):
         """load parameters and refresh interface"""
-        success = self.param_manager.load_params()
+        success, loaded_mode = self.param_manager.load_params()
+        
         if success:
+            if loaded_mode and loaded_mode in MODES:
+                self.mode_var.set(loaded_mode)
+                
             self._refresh_entries()
             self._saved_ok = True
             self.apply_btn.configure(state="normal")
@@ -270,6 +277,9 @@ class ParameterWindow:
         for s in ParamEnum.MODES.values():
             all_keys |= set(s)
         data = {}
+        
+        data["Pacing_Mode"] = mode
+        
         for key in all_keys:
             g = f"get_{key}"
             if hasattr(self.param_manager.param, g):

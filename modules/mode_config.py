@@ -102,8 +102,8 @@ class ParamEnum:
         self.Maximum_Sensor_Rate = 120
         self.Activity_Threshold  = "Med"       
         self.Response_Factor     = 8
-        self.Reaction_Time       = 10         
-        self.Recovery_Time       = 30
+        self.Reaction_Time       = 30         
+        self.Recovery_Time       = 5
         self.Atrial_Sensitivity   = 2.5
         self.Ventricular_Sensitivity = 2.5
         self.PVARP               = 250
