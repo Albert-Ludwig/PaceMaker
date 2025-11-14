@@ -227,3 +227,9 @@ self.source = SerialEgramSource(...)
 目前第一，二，三步基本已经完成。dashboard 的指示灯部分目前实现了不同设备检测，和是否连接。
 第四步 load 已经实现好了。
 目前实现完了画图，但是很奇怪。其他机制都实现好了，但是还没实现 noise 和 out of range 的提示。
+
+## 11/14
+
+增加了 Hyteresis 和 Rate smoothing 的支持。等待 Simulink 组做完我测试。
+删除了 noise 和 out of range 的部分，没啥用目前。
+新增了一个功能可以存储最多 10 个不同的 Pacemaker，并且给他们编号。

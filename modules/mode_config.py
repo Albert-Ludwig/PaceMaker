@@ -22,7 +22,9 @@ class ParamEnum:
             "Atrial_Pulse_Width",
             "ARP",
             "PVARP",
-            "Atrial_Sensitivity"
+            "Atrial_Sensitivity",
+            "Rate_Smoothing",
+            "Hysteresis"
         },
         "VVI": {
             "Lower_Rate_Limit",
@@ -30,7 +32,9 @@ class ParamEnum:
             "Ventricular_Amplitude",
             "Ventricular_Pulse_Width",
             "VRP",
-            "Ventricular_Sensitivity"
+            "Ventricular_Sensitivity",
+            "Hysteresis",
+            "Rate_Smoothing"
         },
 
         #D2
@@ -68,7 +72,9 @@ class ParamEnum:
             "Reaction_Time",
             "Recovery_Time",
             "Atrial_Sensitivity",
-            "PVARP"
+            "PVARP",
+            "Rate_Smoothing",
+            "Hysteresis"
         },
         "VVIR": {
             "Lower_Rate_Limit",
@@ -81,7 +87,9 @@ class ParamEnum:
             "Response_Factor",
             "Reaction_Time",
             "Recovery_Time",
-            "Ventricular_Sensitivity"
+            "Ventricular_Sensitivity",
+            "Hysteresis",
+            "Rate_Smoothing"
         }
     }
     
@@ -107,6 +115,8 @@ class ParamEnum:
         self.Atrial_Sensitivity   = 2.5
         self.Ventricular_Sensitivity = 2.5
         self.PVARP               = 250
+        self.Hysteresis          = "Off"
+        self.Rate_Smoothing      = "Off"
 
     # D1 parameters getter interface 
     def get_Lower_Rate_Limit(self):
@@ -157,6 +167,12 @@ class ParamEnum:
     
     def get_Reaction_Time(self):
         return self.Reaction_Time
+    
+    def get_Hysteresis(self):
+        return self.Hysteresis
+    
+    def get_Rate_Smoothing(self):
+        return self.Rate_Smoothing
 
 
     # D1 parameters setter interface
@@ -351,6 +367,20 @@ class ParamEnum:
         y = self._round_to_step(x, 10)
         self.Reaction_Time = int(y)
 
+    # for hysteresis, discrete values: Off, On
+    def set_Hysteresis(self, val):
+        valid_values = {"Off", "On"}
+        if val not in valid_values:
+            raise ValueError(f"Hysteresis must be one of {valid_values}")
+        self.Hysteresis = val
+    
+    # for rate smoothing, discrete values: Off, 3%, 6%, 9%, 12%, 15%, 18%, 21%, 25%
+    def set_Rate_Smoothing(self, val):
+        valid_values = {"Off", "3%", "6%", "9%", "12%", "15%", "18%", "21%", "25%"}
+        if val not in valid_values:
+            raise ValueError(f"Rate_Smoothing must be one of {valid_values}")
+        self.Rate_Smoothing = val
+
     def get_default_values(self):
         return {
             # D1 parameters
@@ -371,4 +401,6 @@ class ParamEnum:
             "Reaction_Time":           self.get_Reaction_Time(),
             "Recovery_Time":           self.get_Recovery_Time(),
             "PVARP":                   self.get_PVARP(),
+            "Hysteresis":              self.get_Hysteresis(),
+            "Rate_Smoothing":          self.get_Rate_Smoothing(),
         }

@@ -92,7 +92,7 @@ class ParameterWindow:
         self._device_synced = False # check for the difference between hardware and software
         self._applied_after_save = True # check if applied after last save
         self.param_win.title("Parameter Settings")
-        self.param_win.geometry("500x700")
+        self.param_win.geometry("900x500")
         self.param_manager = param_manager
         self.comm_manager = comm_manager
         self.param_win.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -105,36 +105,69 @@ class ParameterWindow:
         ttk.Combobox(self.param_win, textvariable=self.mode_var, values=MODES, state="readonly").pack()
 
         # Parameter inputs in popup
+        
+        main_param_frame = ttk.Frame(self.param_win)
+        main_param_frame.pack(fill="x", expand=True, padx=10, pady=5)
+
+        frame_left = ttk.Frame(main_param_frame)
+        frame_left.pack(side="left", fill="x", expand=True, padx=10, anchor="n")
+
+        frame_right = ttk.Frame(main_param_frame)
+        frame_right.pack(side="right", fill="x", expand=True, padx=10, anchor="n")
+
+        params_list = list(DEFAULT_PARAMS.keys())
+        midpoint = (len(params_list) + 1) // 2
+
         self.param_entries = {}
 
-        for param in DEFAULT_PARAMS:
-            frame = ttk.Frame(self.param_win)
-            frame.pack(pady=3)
-            ttk.Label(frame, text=f"{param}:").pack(side="left")
+        for i, param in enumerate(params_list):
+            parent_frame = frame_left if i < midpoint else frame_right
+
+            frame = ttk.Frame(parent_frame)
+            frame.pack(pady=3, fill='x')
+            
+            ttk.Label(frame, text=f"{param}:", width=22, anchor="w").pack(side="left")
+            
             getter = self.param_manager._resolve_method(
                 self.param_manager.param, 
                 self.param_manager._getter_candidates_for_key(param)
             )
             value = getter() if getter else DEFAULT_PARAMS[param]
             
-            # Special handling for Activity_Threshold - use Combobox
             if param == "Activity_Threshold":
                 entry = ttk.Combobox(
                     frame,
                     values=["V-Low", "Low", "Med-Low", "Med", "Med-High", "High", "V-High"],
                     state="readonly",
-                    width=18
+                    width=15
                 )
                 entry.set(str(value) if value is not None else "Med")
                 entry.bind("<<ComboboxSelected>>", self._mark_unsaved)
+            elif param == "Hysteresis":
+                entry = ttk.Combobox(
+                    frame,
+                    values=["Off", "On"],
+                    state="readonly",
+                    width=15
+                )
+                entry.set(str(value) if value is not None else "Off")
+                entry.bind("<<ComboboxSelected>>", self._mark_unsaved)
+            elif param == "Rate_Smoothing":
+                entry = ttk.Combobox(
+                    frame,
+                    values=["Off", "3%", "6%", "9%", "12%", "15%", "18%", "21%", "25%"],
+                    state="readonly",
+                    width=15
+                )
+                entry.set(str(value) if value is not None else "Off")
+                entry.bind("<<ComboboxSelected>>", self._mark_unsaved)
             else:
-                # Regular entry for other parameters
-                entry = ttk.Entry(frame)
+                entry = ttk.Entry(frame, width=18)
                 entry.insert(0, str(value))
                 entry.bind("<KeyRelease>", self._mark_unsaved)
                 entry.bind("<FocusOut>", self._mark_unsaved)
             
-            entry.pack(side="left")
+            entry.pack(side="left", fill='x', expand=True, padx=5)
             self.param_entries[param] = entry
 
         # Update entry states based on mode
@@ -143,8 +176,7 @@ class ParameterWindow:
             required = set(ParamEnum.MODES.get(mode, set()))  
             for name, entry in self.param_entries.items():
                 if name in required:
-                    # For Activity_Threshold, use readonly instead of normal
-                    if name == "Activity_Threshold":
+                    if name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
                         entry.configure(state="readonly")
                     else:
                         entry.configure(state="normal")
@@ -183,13 +215,12 @@ class ParameterWindow:
             )
             if getter:
                 current_value = getter()
-                # Temporarily enable to update value
-                if param_name == "Activity_Threshold":
+                if param_name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
                     entry.configure(state="readonly")
                 else:
                     entry.configure(state="normal")
                 
-                if param_name == "Activity_Threshold":
+                if param_name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
                     entry.set(str(current_value))
                 else:
                     entry.delete(0, "end")
@@ -200,7 +231,7 @@ class ParameterWindow:
         required = set(ParamEnum.MODES.get(mode, set()))
         for name, entry in self.param_entries.items():
             if name in required:
-                if name == "Activity_Threshold":
+                if name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
                     entry.configure(state="readonly")
                 else:
                     entry.configure(state="normal")
@@ -288,8 +319,7 @@ class ParameterWindow:
             if str(entry.cget("state")) == "disabled":
                 continue
             
-            # Get value from Combobox or Entry
-            if name == "Activity_Threshold":
+            if name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
                 raw = entry.get()
             else:
                 raw = entry.get()
@@ -317,7 +347,7 @@ class ParameterWindow:
             if hasattr(self.param_manager.param, getter_name):
                 try:
                     v = getattr(self.param_manager.param, getter_name)()
-                    if name == "Activity_Threshold":
+                    if name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
                         entry.configure(state="readonly")
                         entry.set(str(v))
                     else:
@@ -363,7 +393,7 @@ class ParameterWindow:
         required = set(ParamEnum.MODES.get(mode, set()))
         for name, entry in self.param_entries.items():
             if name in required:
-                if name == "Activity_Threshold":
+                if name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
                     entry.configure(state="readonly")
                 else:
                     entry.configure(state="normal")

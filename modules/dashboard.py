@@ -19,11 +19,9 @@ class DCMInterface:
         self.root.geometry("900x700")
         self.username = username
         
-        self.device_id = "PACEMAKER-001"
-        self.last_device_id = "PACEMAKER-000" 
+        self.device_id = None # MODIFIED: Will hold the logical name (e.g., PACEMAKER-001)
+        self.last_device_id = None # MODIFIED: Tracks the previous logical name
         self.is_connected = False
-        self.out_of_range = False
-        self.noise_unstable = False
         self.comm_manager = None
 
         # initialize parameters
@@ -61,15 +59,9 @@ class DCMInterface:
         # Device ID display
         self.device_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.device_label.pack(pady=5)
-        # Mode selection
+        # New device warning
         self.new_device_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
         self.new_device_warning_label.pack(pady=5)
-      
-        self.noise_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
-        self.noise_warning_label.pack(pady=5)
-        
-        self.out_of_range_warning_label = ttk.Label(self.root, text="", font=("Arial", 12))
-        self.out_of_range_warning_label.pack(pady=5)
 
         # help button
         help_btn = ttk.Button(self.root, text="Help", command=self.open_help_window)
@@ -92,10 +84,9 @@ class DCMInterface:
         ttk.Button(port_frame, text="Refresh Ports", command=self.refresh_ports).pack(side="left", padx=5)
         ttk.Button(port_frame, text="Connect", command=self.toggle_connect).pack(side="left", padx=5)
 
+        # This call will run check_device_identity before anything is connected
         self.update_status()
         self.check_device_identity()
-        self.out_of_range_detection()
-        self.noise_unstable_detection()
 
     def apply_mode(self):
         """Apply selected mode"""
@@ -109,39 +100,36 @@ class DCMInterface:
             self.status_label.config(text="Status: Connected ✅", foreground="green")
         else:
             self.status_label.config(text="Status: Disconnected ❌", foreground="red")
-        self.device_label.config(text=f"Device ID: {self.device_id}")
-    
-    def noise_unstable_detection(self):
-        """Detect noise/unstable connection"""
-        if self.noise_unstable:
-            self.noise_warning_label.config(text="⚠️ Noise/Unstable serial connection!", foreground="orange")
-        else:
-            self.noise_warning_label.config(text="")
-
-    def out_of_range_detection(self):
-        """Detect out-of-range communication"""
-        if self.out_of_range:
-            self.out_of_range_warning_label.config(text="⚠️ Communication out of range!", foreground="orange")
-        else:
-            self.out_of_range_warning_label.config(text="")
+        
+        # MODIFIED: Show the logical device ID, or "--" if not connected
+        device_display_name = self.device_id if self.device_id else "--"
+        self.device_label.config(text=f"Device ID: {device_display_name}")
 
     def check_device_identity(self):
         """Check for new device connection"""
+        # MODIFIED: This function now relies on comm_manager to get the logical name
         if self.comm_manager is None:
+            # If no comm_manager, reset all device IDs
+            self.device_id = None
+            self.last_device_id = None
             self.device_label.config(text="Device ID: --")
             self.new_device_warning_label.config(text="")
             return
 
+        # Get logical name info from the communication manager
         info = self.comm_manager.check_device_identity()
         current = info.get("device_id")
         last = info.get("last_device_id")
         is_same = info.get("is_same", False)
 
+        # Store the names in the dashboard class
         self.last_device_id = last
         self.device_id = current if current is not None else "--"
 
+        # Update the UI label
         self.device_label.config(text=f"Device ID: {self.device_id}")
 
+        # Show a warning if the device name changed
         if current is not None and last is not None and not is_same:
             self.new_device_warning_label.config(text="🔔 New device detected!", foreground="red")
         else:
@@ -224,13 +212,16 @@ class DCMInterface:
 
     def toggle_connect(self):
         """Connect or disconnect serial port"""
+        # --- Handle disconnect ---
         if self.is_connected and self.comm_manager is not None:
             self.comm_manager.disconnect()
             self.is_connected = False
-            messagebox.showinfo("Disconnected", "Serial connection closed.")
+            self.check_device_identity() # MODIFIED: Check identity to clear the device name
             self.update_status()
+            messagebox.showinfo("Disconnected", "Serial connection closed.")
             return
 
+        # --- Handle connect ---
         selected_port = self.port_combobox.get()
         if not selected_port or "No ports" in selected_port:
             messagebox.showerror("Error", "No valid port selected")
@@ -241,13 +232,16 @@ class DCMInterface:
         
         if self.comm_manager.connect():
             self.is_connected = True
-            messagebox.showinfo("Success", f"Connected to {selected_port}")
+            self.check_device_identity() # MODIFIED: Check identity to get/assign the logical name
+            # Show the logical name in the success message
+            assigned_name = self.device_id if self.device_id != "--" else selected_port
+            messagebox.showinfo("Success", f"Connected to {assigned_name} (on {selected_port})")
         else:
             self.is_connected = False
+            self.check_device_identity() # MODIFIED: Check identity to clear name on failure
             messagebox.showerror("Error", f"Failed to connect to {selected_port}")
         
         self.update_status()
-
 
     def save_parameters(self):
         """Save current parameters to JSON"""
