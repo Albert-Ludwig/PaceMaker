@@ -44,7 +44,7 @@ def _u16(x: Any) -> int:
 class SerialManager:
     """Minimal, transport-only serial layer: connect / send / read / parse."""
 
-    def __init__(self, port: str = "COM3", baudrate: int = 57600,
+    def __init__(self, port: str = "COM3", baudrate: int = 115200,
                  timeout: float = 1.0, write_timeout: float = 1.0) -> None:
         self.port = port
         self.baudrate = baudrate
@@ -285,6 +285,9 @@ class SerialManager:
             # For parameter packets, DataChk must be XOR of the 13 data bytes
             if f_chk(data) != data_chk:
                 return None
+        if fn == K_EGRAM:
+            return {"fn": fn, "data": pkt[4:17], "header_ok": True, "data_ok": True}
+
         else:
             # For non-parameter commands, data must be all zeros and DataChk must be 0
             if any(data) or data_chk != 0:

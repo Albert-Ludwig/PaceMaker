@@ -22,6 +22,21 @@ class PacemakerCommunication:
         self.serial_mgr = SerialManager(port=port, baudrate=baudrate)
         self.is_connected = False
 
+    def _prepare_firmware_params(self, mode, ui_params):
+        p = {}
+        lrl = float(ui_params.get("Lower_Rate_Limit", 60.0))
+        lowrate_interval = int(round(60000.0 / lrl))
+        p["p_pacingState"] = 1
+        p["p_pacingMode"] = int(mode)
+        p["p_hysteresisInterval"] = int(ui_params.get("ARP", lowrate_interval))
+        v_amp = float(ui_params.get("Ventricular_Amplitude", ui_params.get("Atrial_Amplitude", 3.5)))
+        p["p_vPaceAmp"] = int(round(v_amp * 100))
+        v_pw = float(ui_params.get("Ventricular_Pulse_Width", ui_params.get("Atrial_Pulse_Width", 1.0)))
+        p["p_vPaceWidth"] = v_pw
+        p["p_VRP"] = int(ui_params.get("VRP", 320))
+        return p
+
+
     def connect(self) -> bool:
         """Establish connection to pacemaker device"""
         self.is_connected = self.serial_mgr.connect()
@@ -49,82 +64,74 @@ class PacemakerCommunication:
             return b""
         return self.serial_mgr.read_data(num_bytes)
 
-    def upload_parameters(self, mode: int, parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Upload complete parameter set to pacemaker device
-        
-        Args:
-            mode: Pacing mode (0-7)
-            parameters: Dictionary containing all programmable parameters
-            
-        Returns:
-            Dictionary with operation results and status information
-        """
+    def upload_parameters(self, mode, parameters):
         result = {
-            'success': False,
-            'message': '',
-            'sent_parameters': parameters.copy(),
-            'errors': []
+            "success": False,
+            "message": "",
+            "sent_parameters": dict(parameters or {}),
+            "errors": []
         }
-        
         if not self.is_connected:
-            result['message'] = "Device not connected"
-            result['errors'].append("Device not connected")
+            result["message"] = "Device not connected"
+            result["errors"].append("Device not connected")
             return result
-        
         try:
-            frame = self.serial_mgr.build_data_packet(mode=mode, params=parameters)
-            
+            firmware_params = self._prepare_firmware_params(mode, parameters or {})
+            frame = self.serial_mgr.build_data_packet(mode=mode, params=firmware_params)
             if not frame:
-                result['message'] = "Failed to build data packet"
-                result['errors'].append("Packet build failed")
+                result["message"] = "Failed to build data packet"
+                result["errors"].append("Packet build failed")
                 return result
-            
             success = self.serial_mgr.send_data(frame)
-            
             if not success:
-                result['message'] = "Parameter transmission failed"
-                result['errors'].append("Data send failed")
+                result["message"] = "Parameter transmission failed"
+                result["errors"].append("Data send failed")
                 return result
-            
             time.sleep(0.5)
-            
-            result['success'] = True
-            result['message'] = f"Successfully uploaded {len(parameters)} parameters"
-            
+            result["success"] = True
+            result["message"] = "Successfully uploaded {} parameters".format(len(parameters or {}))
         except Exception as e:
-            result['message'] = f"Upload error: {str(e)}"
-            result['errors'].append(str(e))
-        
+            result["message"] = "Upload error: {}".format(str(e))
+            result["errors"].append(str(e))
         return result
 
-    def download_parameters(self) -> Dict[str, Any]:
-        """
-        Download current parameters from pacemaker device
-        
-        Returns:
-            Dictionary with operation results and downloaded parameters
-        """
+
+    def download_parameters(self):
         result = {
-            'success': False,
-            'message': '',
-            'parameters': {},
-            'errors': []
+            "success": False,
+            "message": "",
+            "parameters": {},
+            "errors": []
         }
-        
         if not self.is_connected:
-            result['message'] = "Device not connected"
-            result['errors'].append("Device not connected")
+            result["message"] = "Device not connected"
+            result["errors"].append("Device not connected")
             return result
-        
         try:
-            result['message'] = "Download feature pending implementation"
-            
+            ok = self.serial_mgr.request_parameters()
+            if not ok:
+                result["message"] = "Failed to send K_ECHO request"
+                result["errors"].append("Echo send failed")
+                return result
+            pkt = self.serial_mgr.read_packet(timeout=2.0)
+            if not pkt:
+                result["message"] = "No response from pacemaker"
+                result["errors"].append("Timeout waiting for echo")
+                return result
+            parsed = self.serial_mgr.parse_packet(pkt)
+            if not parsed:
+                result["message"] = "Invalid packet received"
+                result["errors"].append("Packet parse failed")
+                return result
+            params = self.serial_mgr.decode_params(parsed["data"])
+            result["success"] = True
+            result["parameters"] = params
+            result["message"] = "Successfully downloaded parameters from pacemaker"
         except Exception as e:
-            result['message'] = f"Download error: {str(e)}"
-            result['errors'].append(str(e))
-        
+            result["message"] = "Download error: {}".format(str(e))
+            result["errors"].append(str(e))
         return result
+
 
     def check_device_identity(self) -> Dict[str, Any]:
         """

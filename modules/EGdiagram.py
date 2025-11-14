@@ -423,19 +423,12 @@ class PacemakerEgramSource:
 
                 batch = []
                 for _ in range(20):
-                    try:
-                        pkt = serial_mgr.read_packet(timeout=0.2)
-                    except Exception:
-                        pkt = b""
-                    if not pkt or len(pkt) < 4 + 13 + 1:
+                    pkt = serial_mgr.read_packet(timeout=0.2)
+                    if not pkt:
                         continue
-
-                    data = pkt[4:4+13]
-                    try:
-                        decoded = serial_mgr.decode_egram(data)
-                        m_vraw = decoded.get("m_vraw", 0)
-                    except Exception:
-                        m_vraw = 0
+                    data = pkt[4:17]
+                    decoded = serial_mgr.decode_egram(data)
+                    m_vraw = decoded.get("m_vraw", 0)
 
                     v_signal = (m_vraw - 2048) / 2048.0
                     t = self.time
