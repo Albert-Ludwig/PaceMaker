@@ -127,10 +127,26 @@ class DCMInterface:
 
     def check_device_identity(self):
         """Check for new device connection"""
-        if self.device_id != self.last_device_id:
+        if self.comm_manager is None:
+            self.device_label.config(text="Device ID: --")
+            self.new_device_warning_label.config(text="")
+            return
+
+        info = self.comm_manager.check_device_identity()
+        current = info.get("device_id")
+        last = info.get("last_device_id")
+        is_same = info.get("is_same", False)
+
+        self.last_device_id = last
+        self.device_id = current if current is not None else "--"
+
+        self.device_label.config(text=f"Device ID: {self.device_id}")
+
+        if current is not None and last is not None and not is_same:
             self.new_device_warning_label.config(text="🔔 New device detected!", foreground="red")
         else:
             self.new_device_warning_label.config(text="")
+
 
     def sign_out(self):
         """Sign out and return to welcome window"""
@@ -161,7 +177,7 @@ class DCMInterface:
         except (tk.TclError, AttributeError):
             self.param_window = None
 
-        self.param_window = ParameterWindow(self.root, self.param_manager)
+        self.param_window = ParameterWindow(self.root, self.param_manager, self.comm_manager)
     
     def open_help_window(self):
         """Open help window"""
@@ -179,14 +195,17 @@ class DCMInterface:
     def open_egram_window(self):
         """Open the EG diagram window"""
         try:
-            if (self.egram_window and 
-                hasattr(self.egram_window, 'window') and 
+            # 修复：检查 self.egram_window (不是 self.param_window)
+            if (self.egram_window is not None and 
+                hasattr(self.egram_window, 'window') and # 修复：检查 '.window' (来自 EGdiagram.py)
                 self.egram_window.window.winfo_exists()):
-                self.egram_window.window.lift()  
+                self.egram_window.window.lift()
                 return
-        except tk.TclError:
+        except (tk.TclError, AttributeError):
+            # 修复：重置 self.egram_window
             self.egram_window = None
 
+        # 修复：创建 EgramWindow (不是 ParameterWindow)
         self.egram_window = EgramWindow(self.root)
     
     def get_available_ports(self):

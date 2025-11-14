@@ -3,6 +3,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import json
 from .mode_config import ParamEnum
+from typing import Optional
+try:
+    from .Communication import PacemakerCommunication
+except ImportError:
+    from modules.Communication import PacemakerCommunication
+
 
 DEFAULT_PARAMS = ParamEnum().get_default_values()
 MODES = list(ParamEnum.MODES.keys())
@@ -80,12 +86,14 @@ class ParameterManager:
         ]
 
 class ParameterWindow:
-    def __init__(self, parent, param_manager):
+    def __init__(self, parent, param_manager, comm_manager: Optional[PacemakerCommunication]):
         self.param_win = tk.Toplevel(parent)
         self._saved_ok = True
+        self._device_synced = False # check for the difference between hardware and software
         self.param_win.title("Parameter Settings")
         self.param_win.geometry("500x700")
         self.param_manager = param_manager
+        self.comm_manager = comm_manager
         self.param_win.protocol("WM_DELETE_WINDOW", self._on_close)
 
         ttk.Label(self.param_win, text="Programmable Parameters", font=("Arial", 14)).pack(pady=10)
@@ -159,6 +167,7 @@ class ParameterWindow:
 
     def _mark_unsaved(self, *args):
         self._saved_ok = False
+        self._device_synced = False
         try:
             self.apply_btn.configure(state="disabled")
         except Exception:
@@ -208,6 +217,42 @@ class ParameterWindow:
             self._refresh_entries()
             self._saved_ok = True
             self.apply_btn.configure(state="normal")
+            self._device_synced = False
+
+            if self.comm_manager and self.comm_manager.get_connection_status():
+                messagebox.showinfo("Upload", "JSON loaded. Now sending to pacemaker...")
+                
+                mode_str = self.mode_var.get()
+                mode_int = MODES.index(mode_str)
+
+                params_to_send = {}
+                for key in DEFAULT_PARAMS.keys():
+                    getter = self.param_manager._resolve_method(
+                        self.param_manager.param, 
+                        self.param_manager._getter_candidates_for_key(key)
+                    )
+                    if getter:
+                        params_to_send[key] = getter()
+                
+                result = self.comm_manager.upload_parameters(
+                    mode=mode_int, 
+                    parameters=params_to_send
+                )
+                
+                if result['success']:
+                    messagebox.showinfo("Upload Success", "Parameters successfully sent to pacemaker.")
+                    self._device_synced = True
+                else:
+                    messagebox.showerror("Upload Error", f"Failed to send to pacemaker: {result['message']}")
+                    self._device_synced = False
+            
+            elif self.comm_manager:
+                messagebox.showwarning("Upload Skipped", "Parameters loaded from JSON, but not connected to pacemaker.")
+                self._device_synced = False
+            
+            else:
+                messagebox.showwarning("Upload Skipped", "Parameters loaded from JSON. (Offline Mode)")
+                self._device_synced = False
 
     def _reset_with_refresh(self):
         """reset parameters and refresh interface"""
@@ -216,11 +261,13 @@ class ParameterWindow:
             self._refresh_entries()
             self._saved_ok = True
             self.apply_btn.configure(state="normal")
+            self._device_synced = False
 
     def save_and_round(self):
         import json, os
         mode = self.mode_var.get()
         required = set(ParamEnum.MODES.get(mode, set()))
+        self._device_synced = False
         try:
             self.apply_btn.configure(state="disabled")
         except Exception:
@@ -298,6 +345,13 @@ class ParameterWindow:
         messagebox.showinfo("Saved", "The newest input values are rounded and saved.")
 
     def apply(self):
+        if not getattr(self, "_device_synced", False):
+            messagebox.showerror(
+                "Error",
+                "Pacemaker parameters do not match DCM.\nPlease Load before Apply."
+            )
+            return
+
         if not getattr(self, "_saved_ok", False):
             try:
                 self.apply_btn.configure(state="disabled")

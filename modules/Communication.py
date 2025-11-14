@@ -125,3 +125,32 @@ class PacemakerCommunication:
             result['errors'].append(str(e))
         
         return result
+
+    def check_device_identity(self) -> Dict[str, Any]:
+        """
+        Compare current connected device with the last one and return IDs.
+        Returns:
+            {
+                "device_id": <current device id or None>,
+                "last_device_id": <previous device id or None>,
+                "is_same": True/False
+            }
+        """
+        last_id = getattr(self, "_device_id", None)
+
+        current_id = None
+        try:
+            if hasattr(self, "serial_mgr") and self.serial_mgr is not None:
+                current_id = getattr(self.serial_mgr, "port", None)
+        except Exception:
+            current_id = None
+
+        is_same = bool(last_id is not None and current_id is not None and current_id == last_id)
+
+        self._device_id = current_id
+
+        return {
+            "device_id": current_id,
+            "last_device_id": last_id,
+            "is_same": is_same,
+        }

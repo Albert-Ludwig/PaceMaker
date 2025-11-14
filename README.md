@@ -223,4 +223,6 @@ self.source = SerialEgramSource(...)
 
 目前编写了一个初步的 pytest 来测试 serial 和 communication 两个文件，均通过测试。但是连不上 device。
 修复了之前没有存储 mode 的问题。
-目前能连上了，并且增加了在 dashboard
+目前能连上了，并且增加了在 dashboard。
+目前第一，二，三步基本已经完成。dashboard 的指示灯部分目前实现了不同设备检测，和是否连接。
+第四步 load 已经实现好了。
