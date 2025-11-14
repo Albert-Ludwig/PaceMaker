@@ -20,7 +20,7 @@ class DCMInterface:
         self.username = username
         
         self.device_id = "PACEMAKER-001"
-        self.last_device_id = "PACEMAKER-001" 
+        self.last_device_id = "PACEMAKER-000" 
         self.is_connected = False
         self.out_of_range = False
         self.noise_unstable = False
@@ -195,18 +195,19 @@ class DCMInterface:
     def open_egram_window(self):
         """Open the EG diagram window"""
         try:
-            # 修复：检查 self.egram_window (不是 self.param_window)
-            if (self.egram_window is not None and 
-                hasattr(self.egram_window, 'window') and # 修复：检查 '.window' (来自 EGdiagram.py)
+            if (self.egram_window and 
+                hasattr(self.egram_window, 'window') and 
                 self.egram_window.window.winfo_exists()):
-                self.egram_window.window.lift()
+                try:
+                    self.egram_window.comm_manager = self.comm_manager
+                except Exception:
+                    pass
+                self.egram_window.window.lift()  
                 return
-        except (tk.TclError, AttributeError):
-            # 修复：重置 self.egram_window
+        except tk.TclError:
             self.egram_window = None
 
-        # 修复：创建 EgramWindow (不是 ParameterWindow)
-        self.egram_window = EgramWindow(self.root)
+        self.egram_window = EgramWindow(self.root, self.comm_manager)
     
     def get_available_ports(self):
         """Get available serial ports"""

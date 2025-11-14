@@ -220,7 +220,8 @@ class EgramView(tk.Canvas): # Canvas to render EGdiagram
 
 
 class EgramWindow: # EGdiagram window
-    def __init__(self, parent):
+    def __init__(self, parent, comm_manager=None):
+        self.comm_manager = comm_manager
         self.window = tk.Toplevel(parent)
         self.window.title("EG Diagram")
         self.window.geometry("1100x700")
@@ -243,6 +244,7 @@ class EgramWindow: # EGdiagram window
         self._is_running = False
         self._update_buttons()
 
+        # Zoom controls
         ttk.Label(control_frame, text="Zoom:").pack(side=tk.LEFT, padx=(10, 2))
         for z in (0.5, 1, 2):
             ttk.Button(
@@ -277,28 +279,58 @@ class EgramWindow: # EGdiagram window
         """Keep Start/Stop/Clear buttons consistent with current running state."""
         running = bool(getattr(self, "_is_running", False))
         try:
-            # Running: Start disabled, Stop enabled, Clear disabled
-            # Stopped: Start enabled, Stop disabled, Clear enabled
             self.start_btn.configure(state=("disabled" if running else "normal"))
             self.stop_btn.configure(state=("normal" if running else "disabled"))
             self.clear_btn.configure(state=("disabled" if running else "normal"))
         except Exception:
-            # Avoid crashing UI if any widget not yet available
             pass
 
     def start_egram(self):
         """Start EGdiagram data stream"""
-        if self._is_running:
+        if getattr(self, "_is_running", False):
             messagebox.showwarning("Warning", "Egram is already running. Please press Stop first.")
             return
-            
-        # Create mock data source, will be replaced by real data source in D2
-        source = MockEgramSource()
+
+        if self.comm_manager is None:
+            messagebox.showerror("Error", "Pacemaker not available. Please connect first.")
+            return
+        try:
+            is_connected = self.comm_manager.get_connection_status()
+        except Exception:
+            is_connected = False
+        if not is_connected:
+            messagebox.showerror("Error", "Pacemaker not connected. Please connect first.")
+            return
+
+        source = PacemakerEgramSource(self.comm_manager)
         self.controller = EgramController(self.model, self.canvas, source, self.window)
         self.controller.start()
         self._is_running = True
         self._update_buttons()
-    
+        self._poll_connection()
+
+    def _poll_connection(self):
+        """
+        Periodically check if pacemaker is still connected.
+        If disconnected while plotting, stop the egram immediately.
+        """
+        if not getattr(self, "_is_running", False):
+            return
+        if self.comm_manager is None:
+            self.stop_egram()
+            return
+        try:
+            is_connected = self.comm_manager.get_connection_status()
+        except Exception:
+            is_connected = False
+        if not is_connected:
+            self.stop_egram()
+            return
+        try:
+            self.window.after(200, self._poll_connection)
+        except Exception:
+            pass
+
     def stop_egram(self):
         """Stop EGdiagram data stream"""
         try:
@@ -306,9 +338,6 @@ class EgramWindow: # EGdiagram window
                 self.controller.stop()
         except Exception:
             pass
-        
-        # the serial port will be achieved in D2.
-
         self._is_running = False
         self._update_buttons()
     
@@ -350,37 +379,75 @@ class EgramWindow: # EGdiagram window
                 pass
         self.window.destroy()
 
-
-# temp file, will be delete and replaced by serial comm in D2.
-class MockEgramSource:
-    """Mock EGdiagram data source"""
-    def __init__(self):
-        self.sample_rate = 200
+class PacemakerEgramSource:
+    def __init__(self, comm_manager, sample_rate=200):
+        self.comm_manager = comm_manager
+        self.sample_rate = sample_rate
         self.time = 0.0
-        
+
     def stream(self):
-        """Mock data stream generator"""
-        import math
-        import random
-        
-        while True:
-            batch = []
-            # Generate a batch of data points (e.g. 0.1 seconds of data)
-            for _ in range(20):  # 200Hz * 0.1s = 20 points
-                # Simulate atrial signal (Atrial EGM channel)
-                atrial_signal = 0.5 * math.sin(2 * math.pi * 5 * self.time)  # 5Hz sine wave
-                
-                # Simulate ventricular signal (Ventricular EGM channel)
-                ventricular_signal = 0.3 * math.sin(2 * math.pi * 3 * self.time + math.pi/4)  # 3Hz sine wave with phase offset
-                
-                # Simulate ECG signal (Surface ECG)
-                ecg_signal = 0.8 * math.sin(2 * math.pi * 1 * self.time)  # 1Hz main frequency
-                # Add some noise and features
-                ecg_signal += 0.2 * random.uniform(-1, 1)
-                
-                batch.append((self.time, atrial_signal, ventricular_signal, ecg_signal))
-                self.time += 1.0 / self.sample_rate
-                
-            yield batch
-            import time
-            time.sleep(0.1)  # Simulate real-time data stream interval
+        if self.comm_manager is None:
+            return
+        try:
+            is_connected = self.comm_manager.get_connection_status()
+        except Exception:
+            is_connected = False
+        if not is_connected:
+            return
+
+        serial_mgr = getattr(self.comm_manager, "serial_mgr", None)
+        if serial_mgr is None:
+            return
+        try:
+            if not serial_mgr.is_connected():
+                return
+        except Exception:
+            return
+
+        try:
+            ok = serial_mgr.start_egram()
+        except Exception:
+            return
+        if not ok:
+            return
+
+        try:
+            while True:
+                try:
+                    if not self.comm_manager.get_connection_status():
+                        break
+                    if not serial_mgr.is_connected():
+                        break
+                except Exception:
+                    break
+
+                batch = []
+                for _ in range(20):
+                    try:
+                        pkt = serial_mgr.read_packet(timeout=0.2)
+                    except Exception:
+                        pkt = b""
+                    if not pkt or len(pkt) < 4 + 13 + 1:
+                        continue
+
+                    data = pkt[4:4+13]
+                    try:
+                        decoded = serial_mgr.decode_egram(data)
+                        m_vraw = decoded.get("m_vraw", 0)
+                    except Exception:
+                        m_vraw = 0
+
+                    v_signal = (m_vraw - 2048) / 2048.0
+                    t = self.time
+                    batch.append((t, 0.0, v_signal, 0.0))
+                    self.time += 1.0 / self.sample_rate
+
+                if batch:
+                    yield batch
+                else:
+                    time.sleep(0.05)
+        finally:
+            try:
+                serial_mgr.stop_egram()
+            except Exception:
+                pass

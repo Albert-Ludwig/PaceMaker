@@ -90,6 +90,7 @@ class ParameterWindow:
         self.param_win = tk.Toplevel(parent)
         self._saved_ok = True
         self._device_synced = False # check for the difference between hardware and software
+        self._applied_after_save = True # check if applied after last save
         self.param_win.title("Parameter Settings")
         self.param_win.geometry("500x700")
         self.param_manager = param_manager
@@ -208,6 +209,12 @@ class ParameterWindow:
     
     def _load_with_refresh(self):
         """load parameters and refresh interface"""
+        if hasattr(self, "_applied_after_save") and not self._applied_after_save:
+            messagebox.showerror(
+                "Error",
+                "Please Apply current parameters before loading new ones."
+            )
+            return
         success, loaded_mode = self.param_manager.load_params()
         
         if success:
@@ -268,6 +275,7 @@ class ParameterWindow:
         mode = self.mode_var.get()
         required = set(ParamEnum.MODES.get(mode, set()))
         self._device_synced = False
+        self._applied_after_save = False
         try:
             self.apply_btn.configure(state="disabled")
         except Exception:
@@ -345,13 +353,6 @@ class ParameterWindow:
         messagebox.showinfo("Saved", "The newest input values are rounded and saved.")
 
     def apply(self):
-        if not getattr(self, "_device_synced", False):
-            messagebox.showerror(
-                "Error",
-                "Pacemaker parameters do not match DCM.\nPlease Load before Apply."
-            )
-            return
-
         if not getattr(self, "_saved_ok", False):
             try:
                 self.apply_btn.configure(state="disabled")
@@ -368,6 +369,9 @@ class ParameterWindow:
                     entry.configure(state="normal")
             else:
                 entry.configure(state="disabled")
+        
+        self._applied_after_save = True  
+
         messagebox.showinfo("Apply", f"Mode {mode} applied.")
 
     def _on_close(self):
