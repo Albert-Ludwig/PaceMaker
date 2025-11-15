@@ -233,3 +233,4 @@ self.source = SerialEgramSource(...)
 增加了 Hyteresis 和 Rate smoothing 的支持。等待 Simulink 组做完我测试。
 删除了 noise 和 out of range 的部分，没啥用目前。
 新增了一个功能可以存储最多 10 个不同的 Pacemaker，并且给他们编号。
+修改了 new device 的逻辑，现在把 last device 存到 Pacemaker_device_name.json 里面，修复了之前不弹出 new device 的问题。

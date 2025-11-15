@@ -1,6 +1,9 @@
-[
-  {
-    "port": "/dev/cu.usbmodem0006210000001",
-    "name": "PACEMAKER-001"
-  }
-]
+{
+  "last_connected_device_name": "PACEMAKER-003",
+  "devices": [
+    {
+      "port": "/dev/cu.usbmodem0006210000001",
+      "name": "PACEMAKER-001"
+    }
+  ]
+}

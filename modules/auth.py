@@ -57,64 +57,103 @@ def logout_account(username, user_data_file):
     except Exception:
         return False
 
-# Device name management functions
+# --- NEW: Device Name Management Functions ---
+
+def _get_default_device_data():
+    """Returns the default structure for the device JSON file."""
+    return {
+        "last_connected_device_name": None,
+        "devices": []
+    }
+
 def load_device_names():
     """
-    Loads the list of known devices from the JSON file.
-    Creates the file/directory if it doesn't exist.
+    Loads the device data object { "last_...": "...", "devices": [...] }.
+    Handles migration from the old list-based format automatically.
     """
-    os.makedirs("data", exist_ok=True) # Ensure the 'data' directory exists
+    os.makedirs("data", exist_ok=True)
     if not os.path.exists(DEVICE_FILE):
-        with open(DEVICE_FILE, "w") as f:
-            json.dump([], f) # Create an empty list if file is new
-        return []
+        data = _get_default_device_data()
+        save_device_names(data)
+        return data
+    
     try:
         with open(DEVICE_FILE, "r") as f:
-            return json.load(f) # Load the existing list
-    except json.JSONDecodeError:
-        return [] # Return empty list if JSON is corrupt
+            data = json.load(f)
+            
+        # --- MIGRATION LOGIC ---
+        # If the file is just a list (old format), convert it.
+        if isinstance(data, list):
+            migrated_data = _get_default_device_data()
+            migrated_data["devices"] = data # Keep the old device list
+            save_device_names(migrated_data)
+            return migrated_data
+        # --- END MIGRATION ---
 
-def save_device_names(devices):
-    """Saves the updated list of devices back to the JSON file."""
+        # Ensure keys exist if it's a dict but malformed
+        if "devices" not in data:
+            data["devices"] = []
+        if "last_connected_device_name" not in data:
+            data["last_connected_device_name"] = None
+
+        return data
+        
+    except json.JSONDecodeError:
+        return _get_default_device_data()
+
+def save_device_names(device_data):
+    """Saves the entire device data object back to the JSON file."""
     with open(DEVICE_FILE, "w") as f:
-        json.dump(devices, f, indent=2)
+        json.dump(device_data, f, indent=2)
+
+def get_last_connected_device():
+    """Reads and returns only the 'last_connected_device_name' string."""
+    device_data = load_device_names()
+    return device_data.get("last_connected_device_name")
+
+def set_last_connected_device(device_name: str):
+    """Updates and saves the 'last_connected_device_name' string."""
+    device_data = load_device_names()
+    device_data["last_connected_device_name"] = device_name
+    save_device_names(device_data)
 
 def get_or_assign_device_name(port_name: str) -> str:
     """
-    Gets a device's logical name (e.g., "PACEMAKER-001") based on its port (e.g., "COM3").
-    If the port is new and the 10-device limit isn't reached, it assigns a new name.
+    Gets a device's logical name based on its port.
+    If the port is new, it assigns a new name and saves it.
     """
     if not port_name:
-        return "--" # Handle null port name
+        return "--"
         
-    devices = load_device_names()
+    device_data = load_device_names()
+    devices_list = device_data.get("devices", [])
     
     # 1. Check if this port is already known
-    for device in devices:
+    for device in devices_list:
         if device.get("port") == port_name:
-            return device.get("name", port_name) # Return its saved name
+            return device.get("name", port_name)
             
     # 2. If new, check if we have space (max 10 devices)
-    if len(devices) >= 10:
-        return f"PORT-FULL ({port_name})" # Notify that the device list is full
+    if len(devices_list) >= 10:
+        return f"PORT-FULL ({port_name})"
 
-    # 3. Find the next available number (e.g., if 001 and 003 exist, next is 004)
+    # 3. Find the next available number
     max_num = 0
-    for device in devices:
+    for device in devices_list:
         try:
-            # Extract the number part of "PACEMAKER-XXX"
             num = int(device.get("name", "PACEMAKER-000").split("-")[-1])
             max_num = max(max_num, num)
         except Exception:
-            continue # Ignore malformed names
+            continue
             
-    new_name = f"PACEMAKER-{max_num + 1:03d}" # Format new name, e.g., PACEMAKER-004
+    new_name = f"PACEMAKER-{max_num + 1:03d}"
     
-    # 4. Add the new device to the list and save it
-    devices.append({
+    # 4. Add the new device to the list and save the whole object
+    devices_list.append({
         "port": port_name,
         "name": new_name
     })
+    device_data["devices"] = devices_list
     
-    save_device_names(devices)
+    save_device_names(device_data)
     return new_name

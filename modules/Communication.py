@@ -8,10 +8,11 @@ import time
 
 try:
     from .Serial_Manager import SerialManager
-    from .auth import get_or_assign_device_name # Import the new device naming function
+    # Import the new functions from auth.py
+    from .auth import get_or_assign_device_name, set_last_connected_device
 except ImportError:
     from modules.Serial_Manager import SerialManager
-    from modules.auth import get_or_assign_device_name # Import the new device naming function
+    from modules.auth import get_or_assign_device_name, set_last_connected_device
 
 class PacemakerCommunication:
     """
@@ -23,7 +24,8 @@ class PacemakerCommunication:
         """Initialize communication manager with serial connection parameters"""
         self.serial_mgr = SerialManager(port=port, baudrate=baudrate)
         self.is_connected = False
-        self._device_logical_name = None # NEW: Tracks the assigned logical name (e.g., PACEMAKER-001)
+        # self._device_logical_name is no longer needed here
+        # The dashboard will store the session state, auth.py stores the persistent state
 
     def _prepare_firmware_params(self, mode, ui_params):
         p = {}
@@ -135,44 +137,28 @@ class PacemakerCommunication:
             result["errors"].append(str(e))
         return result
 
-
     def check_device_identity(self) -> Dict[str, Any]:
         """
-        Compare current connected device with the last one and return IDs.
-        MODIFIED: This now uses the logical name (e.g., PACEMAKER-001) from the
-        device name registry instead of the raw port name (e.g., COM3).
-        
-        Returns:
-            {
-                "device_id": <current logical name or None>,
-                "last_device_id": <previous logical name or None>,
-                "is_same": True/False
-            }
+        Check and return the identity of the connected pacemaker device.
+        This function now ALSO updates the "last_connected_device_name" in the JSON file.
         """
-        # Get the logical name from the last time this function was called
-        last_logical_name = getattr(self, "_device_logical_name", None)
-        current_logical_name = None
-        
-        # Check if we are connected and have a valid serial manager
+        current_logical_name = None 
+
         if self.is_connected and hasattr(self, "serial_mgr") and self.serial_mgr is not None:
             try:
-                # Get the physical port name (e.g., "COM3")
                 port_name = getattr(self.serial_mgr, "port", None)
                 if port_name:
-                    # Get or assign the logical name (e.g., "PACEMAKER-001")
+                    # 1. Get or assign the logical name
                     current_logical_name = get_or_assign_device_name(port_name)
+                    
+                    # 2. NEW: Save this name as the "last connected" device
+                    if current_logical_name:
+                        set_last_connected_device(current_logical_name)
+                        
             except Exception as e:
                 print(f"Error getting device name: {e}")
                 current_logical_name = None
-        
-        # Compare the current logical name to the previous one
-        is_same = bool(last_logical_name is not None and current_logical_name is not None and current_logical_name == last_logical_name)
-
-        # Store the new current name for the next check
-        self._device_logical_name = current_logical_name
-
+                
         return {
             "device_id": current_logical_name,
-            "last_device_id": last_logical_name,
-            "is_same": is_same,
         }

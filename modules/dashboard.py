@@ -8,6 +8,9 @@ from modules.Help_Window import HelpWindow
 from modules.Communication import PacemakerCommunication
 from modules.Serial_Manager import SerialManager
 
+# NEW: Import the function to read the last saved device
+from modules.auth import get_last_connected_device, logout_account
+
 # import the modes, parameters, and default values from mode_config.py
 DEFAULT_PARAMS = ParamEnum().get_default_values()
 MODES = list(ParamEnum.MODES.keys())
@@ -19,8 +22,11 @@ class DCMInterface:
         self.root.geometry("900x700")
         self.username = username
         
-        self.device_id = None # MODIFIED: Will hold the logical name (e.g., PACEMAKER-001)
-        self.last_device_id = None # MODIFIED: Tracks the previous logical name
+        self.device_id = None # Will hold the *current* logical name
+        
+        # NEW: Initialize last_device_id from the persistent JSON file
+        self.last_device_id = get_last_connected_device()
+        
         self.is_connected = False
         self.comm_manager = None
 
@@ -84,15 +90,12 @@ class DCMInterface:
         ttk.Button(port_frame, text="Refresh Ports", command=self.refresh_ports).pack(side="left", padx=5)
         ttk.Button(port_frame, text="Connect", command=self.toggle_connect).pack(side="left", padx=5)
 
-        # This call will run check_device_identity before anything is connected
         self.update_status()
-        self.check_device_identity()
 
     def apply_mode(self):
         """Apply selected mode"""
         mode = self.mode_var.get()
         self.status_label.config(text=f"Mode {mode} applied.")
-        self.check_device_identity()
 
     def update_status(self):
         """Update connection status and device ID"""
@@ -101,41 +104,12 @@ class DCMInterface:
         else:
             self.status_label.config(text="Status: Disconnected ❌", foreground="red")
         
-        # MODIFIED: Show the logical device ID, or "--" if not connected
+        # Show the logical device ID, or "--" if not connected
         device_display_name = self.device_id if self.device_id else "--"
         self.device_label.config(text=f"Device ID: {device_display_name}")
 
-    def check_device_identity(self):
-        """Check for new device connection"""
-        # MODIFIED: This function now relies on comm_manager to get the logical name
-        if self.comm_manager is None:
-            # If no comm_manager, reset all device IDs
-            self.device_id = None
-            self.last_device_id = None
-            self.device_label.config(text="Device ID: --")
-            self.new_device_warning_label.config(text="")
-            return
-
-        # Get logical name info from the communication manager
-        info = self.comm_manager.check_device_identity()
-        current = info.get("device_id")
-        last = info.get("last_device_id")
-        is_same = info.get("is_same", False)
-
-        # Store the names in the dashboard class
-        self.last_device_id = last
-        self.device_id = current if current is not None else "--"
-
-        # Update the UI label
-        self.device_label.config(text=f"Device ID: {self.device_id}")
-
-        # Show a warning if the device name changed
-        if current is not None and last is not None and not is_same:
-            self.new_device_warning_label.config(text="🔔 New device detected!", foreground="red")
-        else:
-            self.new_device_warning_label.config(text="")
-
-
+    # No longer need check_device_identity here, logic is moved into toggle_connect
+    
     def sign_out(self):
         """Sign out and return to welcome window"""
         self.root.destroy()
@@ -146,7 +120,7 @@ class DCMInterface:
         """Confirm and log out account"""
         response = messagebox.askokcancel("Confirm Logout", "This account will be logged out")
         if response:
-            from modules.auth import logout_account
+            # from modules.auth import logout_account # (already imported at top)
             success = logout_account(self.username, "data/users.json")  
             if success:
                 messagebox.showinfo("Success", "Account has been logged out.")
@@ -212,11 +186,17 @@ class DCMInterface:
 
     def toggle_connect(self):
         """Connect or disconnect serial port"""
+        
         # --- Handle disconnect ---
         if self.is_connected and self.comm_manager is not None:
             self.comm_manager.disconnect()
             self.is_connected = False
-            self.check_device_identity() # MODIFIED: Check identity to clear the device name
+            
+            # Store the ID of the device we just disconnected
+            self.last_device_id = self.device_id 
+            self.device_id = None # Clear current device
+            
+            self.new_device_warning_label.config(text="") # Clear warning on disconnect
             self.update_status()
             messagebox.showinfo("Disconnected", "Serial connection closed.")
             return
@@ -227,18 +207,35 @@ class DCMInterface:
             messagebox.showerror("Error", "No valid port selected")
             return
         
-        # Create new communication manager with selected port
         self.comm_manager = PacemakerCommunication(port=selected_port)
         
         if self.comm_manager.connect():
             self.is_connected = True
-            self.check_device_identity() # MODIFIED: Check identity to get/assign the logical name
-            # Show the logical name in the success message
+            
+            # Get the logical name (this also saves it as "last_connected" in the file)
+            info = self.comm_manager.check_device_identity()
+            current_device_name = info.get("device_id")
+            self.device_id = current_device_name if current_device_name is not None else "--"
+            
+            # Compare current name to the one loaded at startup (or from last disconnect)
+            if (self.last_device_id is not None and 
+                self.device_id != "--" and 
+                self.device_id != self.last_device_id):
+                
+                self.new_device_warning_label.config(
+                    text="🔔 New device detected!", foreground="red"
+                )
+            else:
+                self.new_device_warning_label.config(text="")
+            
             assigned_name = self.device_id if self.device_id != "--" else selected_port
             messagebox.showinfo("Success", f"Connected to {assigned_name} (on {selected_port})")
+        
         else:
+            # Connect failed
             self.is_connected = False
-            self.check_device_identity() # MODIFIED: Check identity to clear name on failure
+            self.device_id = None
+            self.comm_manager = None
             messagebox.showerror("Error", f"Failed to connect to {selected_port}")
         
         self.update_status()
@@ -249,7 +246,7 @@ class DCMInterface:
 
     def load_parameters(self):
         """Load parameters from JSON"""
-        success = self.param_manager.load_params()
+        success, _ = self.param_manager.load_params()
         if success:
             self.entries = {param: str(self.param_manager.defaults[param]) for param in self.param_manager.defaults}
         return success
@@ -258,7 +255,6 @@ class DCMInterface:
         """Apply current parameters (update internal state)"""
         mode = self.mode_var.get()
         self.status_label.config(text=f"Parameters applied for mode {mode}")
-        self.check_device_identity()
 
     def reset_parameters(self):
         """Reset parameters to defaults"""
