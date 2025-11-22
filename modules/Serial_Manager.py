@@ -348,4 +348,3 @@ class SerialManager:
             "p_hysteresisFlag": hyst_flag,
             "p_RateSmoothing": rate_smoothing,
         }
-
