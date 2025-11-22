@@ -25,13 +25,9 @@ class PacemakerCommunication:
         self.is_connected = False
 
     def _prepare_firmware_params(self, mode, ui_params):
-        """
-        Convert UI parameters to firmware-compatible format
-        """
         ui_params = ui_params or {}
         p = {}
 
-        # calculate Low Rate Interval from LRL
         lrl_source = None
         for k in ("Lower_Rate_Limit", "LRL", "LRL_bpm"):
             if k in ui_params:
@@ -41,31 +37,46 @@ class PacemakerCommunication:
             lrl_bpm = float(lrl_source) if lrl_source is not None else 60.0
         except Exception:
             lrl_bpm = 60.0
-        lowrate_interval = int(round(60000.0 / lrl_bpm))
+        p["p_LRL"] = int(round(lrl_bpm))
 
-    
-        hyst_src = ui_params.get("Hysteresis", "Off")
-        hyst_flag = 0
-        if str(hyst_src) == "On":
-            hyst_flag = 1
-        p["p_hysteresisFlag"] = hyst_flag
-
-        p["p_hysteresisInterval"] = lowrate_interval 
-
-        p["p_pacingState"] = 1
+        url_src = ui_params.get("Upper_Rate_Limit")
         try:
-            p["p_pacingMode"] = int(mode)
+            url_bpm = float(url_src) if url_src is not None else 120.0
         except Exception:
-            p["p_pacingMode"] = 0
+            url_bpm = 120.0
+        p["p_URL"] = int(round(url_bpm))
 
-        p["p_lowrateInterval"] = lowrate_interval
-
-        v_amp_src = ui_params.get("Ventricular_Amplitude", ui_params.get("V_Amp_V"))
+        msr_src = ui_params.get("Maximum_Sensor_Rate")
         try:
-            v_amp_v = float(v_amp_src) if v_amp_src is not None else 5.0
+            msr_bpm = float(msr_src) if msr_src is not None else p["p_URL"]
         except Exception:
-            v_amp_v = 5.0
-        p["p_vPaceAmp"] = int(round(v_amp_v * 100.0))
+            msr_bpm = p["p_URL"]
+        p["p_MaxSensorRate"] = int(round(msr_bpm))
+
+        arp_src = ui_params.get("ARP")
+        try:
+            p["p_ARP"] = int(arp_src) if arp_src is not None else 320
+        except Exception:
+            p["p_ARP"] = 320
+
+        vrp_src = ui_params.get("VRP", ui_params.get("VRP_ms"))
+        try:
+            p["p_VRP"] = int(vrp_src) if vrp_src is not None else 320
+        except Exception:
+            p["p_VRP"] = 320
+
+        pvarp_src = ui_params.get("PVARP")
+        try:
+            p["p_PVARP"] = int(pvarp_src) if pvarp_src is not None else 250
+        except Exception:
+            p["p_PVARP"] = 250
+
+        a_pw_src = ui_params.get("Atrial_Pulse_Width", ui_params.get("A_PW_ms"))
+        try:
+            a_pw_ms = float(a_pw_src) if a_pw_src is not None else 1.0
+        except Exception:
+            a_pw_ms = 1.0
+        p["p_aPaceWidth"] = a_pw_ms
 
         v_pw_src = ui_params.get("Ventricular_Pulse_Width", ui_params.get("V_PW_ms"))
         try:
@@ -74,14 +85,81 @@ class PacemakerCommunication:
             v_pw_ms = 1.0
         p["p_vPaceWidth"] = v_pw_ms
 
-        vrp_src = ui_params.get("VRP", ui_params.get("VRP_ms"))
+        a_amp_src = ui_params.get("Atrial_Amplitude", ui_params.get("A_Amp_V"))
         try:
-            p["p_VRP"] = int(vrp_src) if vrp_src is not None else 320
+            a_amp_v = float(a_amp_src) if a_amp_src is not None else 5.0
         except Exception:
-            p["p_VRP"] = 320
+            a_amp_v = 5.0
+        p["p_aPaceAmp"] = int(round(a_amp_v * 100.0))
+
+        v_amp_src = ui_params.get("Ventricular_Amplitude", ui_params.get("V_Amp_V"))
+        try:
+            v_amp_v = float(v_amp_src) if v_amp_src is not None else 5.0
+        except Exception:
+            v_amp_v = 5.0
+        p["p_vPaceAmp"] = int(round(v_amp_v * 100.0))
+
+        a_sens_src = ui_params.get("Atrial_Sensitivity")
+        try:
+            a_sens_v = float(a_sens_src) if a_sens_src is not None else 5.0
+        except Exception:
+            a_sens_v = 5.0
+        p["p_aSens"] = int(round(a_sens_v * 100.0))
+
+        v_sens_src = ui_params.get("Ventricular_Sensitivity")
+        try:
+            v_sens_v = float(v_sens_src) if v_sens_src is not None else 5.0
+        except Exception:
+            v_sens_v = 5.0
+        p["p_vSens"] = int(round(v_sens_v * 100.0))
+
+        act_src = ui_params.get("Activity_Threshold")
+        try:
+            p["p_ActivityThreshold"] = int(act_src) if act_src is not None else 0
+        except Exception:
+            p["p_ActivityThreshold"] = 0
+
+        react_src = ui_params.get("Reaction_Time")
+        try:
+            p["p_ReactionTime"] = int(react_src) if react_src is not None else 30
+        except Exception:
+            p["p_ReactionTime"] = 30
+
+        resp_src = ui_params.get("Response_Factor")
+        try:
+            p["p_ResponseFactor"] = int(resp_src) if resp_src is not None else 8
+        except Exception:
+            p["p_ResponseFactor"] = 8
+
+        rec_src = ui_params.get("Recovery_Time")
+        try:
+            p["p_RecoveryTime"] = int(rec_src) if rec_src is not None else 5
+        except Exception:
+            p["p_RecoveryTime"] = 5
+
+        hyst_src = ui_params.get("Hysteresis")
+        hyst_flag = 0
+        if isinstance(hyst_src, str):
+            s = hyst_src.strip().lower()
+            if s in ("1", "on", "true", "yes"):
+                hyst_flag = 1
+        elif isinstance(hyst_src, (int, float, bool)):
+            hyst_flag = 1 if int(hyst_src) != 0 else 0
+        p["p_hysteresisFlag"] = hyst_flag
+
+        rs_src = ui_params.get("Rate_Smoothing")
+        try:
+            p["p_RateSmoothing"] = int(rs_src) if rs_src is not None else 0
+        except Exception:
+            p["p_RateSmoothing"] = 0
+
+        p["p_pacingState"] = 1
+        try:
+            p["p_pacingMode"] = int(mode)
+        except Exception:
+            p["p_pacingMode"] = 0
 
         return p
-
 
     def connect(self) -> bool:
         """Establish connection to pacemaker device"""

@@ -42,3 +42,27 @@
 创建一个 serial 的底层文件，里面实现通讯的内部细节，communication 来实现它。communication 负责实现所有读取的内容和读取什么，然后发送给其他文件。读取的数据比较的函数在这里实现，然后 paramOps 调用就行，比较的容忍值按照参数表来。
 
 #### 传输逻辑：
+
+```
+字节偏移,参数名称 (Parameter),数据类型,长度,说明
+0,Pacing Mode,uint8,1,"模式索引 (0=AOO, 1=VOO, etc.)"
+1,Lower Rate Limit,uint8,1,"BPM 值 (e.g., 60)"
+2,Upper Rate Limit,uint8,1,"BPM 值 (e.g., 120)"
+3,Max Sensor Rate,uint8,1,"BPM 值 (e.g., 120)"
+4-5,ARP,uint16,2,"毫秒值 (e.g., 320)"
+6-7,VRP,uint16,2,"毫秒值 (e.g., 320)"
+8-9,PVARP,uint16,2,"毫秒值 (e.g., 250)"
+10,Atrial Pulse Width,uint8,1,"毫秒值 (e.g., 1)"
+11,Vent Pulse Width,uint8,1,"毫秒值 (e.g., 1)"
+12-13,Atrial Amp,uint16,2,原始值 * 100
+14-15,Vent Amp,uint16,2,原始值 * 100
+16-17,Atrial Sens,uint16,2,原始值 * 100
+18-19,Vent Sens,uint16,2,原始值 * 100
+20,Activity Threshold,uint8,1,映射索引 (0-6)
+21,Reaction Time,uint8,1,"秒 (e.g., 30)"
+22,Response Factor,uint8,1,"等级 (e.g., 8)"
+23,Recovery Time,uint8,1,"分钟 (e.g., 5)"
+24,Hysteresis,uint8,1,"0=Off, 1=On"
+25,Rate Smoothing,uint8,1,映射索引 (0-8)
+26-29,Padding,bytes,3,填充 0 以补齐 29 字节
+```

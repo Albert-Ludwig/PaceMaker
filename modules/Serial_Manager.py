@@ -12,7 +12,7 @@ K_ECHO    = 0x49  # Request parameters
 K_PPARAMS = 0x55  # Send parameters
 K_EGRAM   = 0x47  # Start egram stream
 K_ESTOP   = 0x62  # Stop egram stream
-N_DATA    = 13    # Every packet must carry exactly 13 data bytes
+N_DATA    = 30    # Every packet must carry exactly 30 data bytes
 
 # Activity threshold mapping (kept here for completeness; not used in packing)
 ACTIVITY_MAP: Dict[str, int] = {
@@ -120,6 +120,7 @@ class SerialManager:
         if not isinstance(data, (bytes, bytearray)):
             return False
         try:
+            print(f"[TX List]: {list(data)}") # 测试
             sp = self._port()
             n = sp.write(data)
             sp.flush()
@@ -188,31 +189,56 @@ class SerialManager:
     def build_data_packet(self, mode, params):
         p = params or {}
 
-        pacing_state = int(p.get("p_pacingState", 1))
         pacing_mode = int(p.get("p_pacingMode", mode))
-        hyst_flag = int(p.get("p_hysteresisFlag", 0))
+        lrl = int(p.get("p_LRL", 60))
+        url = int(p.get("p_URL", 120))
+        max_sensor_rate = int(p.get("p_MaxSensorRate", url))
 
-        lowrate_interval = int(p.get("p_lowrateInterval", 1000))
-        hysteresis = int(p.get("p_hysteresisInterval", lowrate_interval))
-
-        v_amp = int(p.get("p_vPaceAmp", 500))
-        v_pw_ms = float(p.get("p_vPaceWidth", 1.0))
+        arp = int(p.get("p_ARP", 320))
         vrp = int(p.get("p_VRP", 320))
+        pvarp = int(p.get("p_PVARP", 250))
+
+        a_pw_ms = float(p.get("p_aPaceWidth", 1.0))
+        v_pw_ms = float(p.get("p_vPaceWidth", 1.0))
+
+        a_amp_raw = int(p.get("p_aPaceAmp", 500))
+        v_amp_raw = int(p.get("p_vPaceAmp", 500))
+
+        a_sens_raw = int(p.get("p_aSens", 500))
+        v_sens_raw = int(p.get("p_vSens", 500))
+
+        activity_th = int(p.get("p_ActivityThreshold", 0))
+        reaction_time = int(p.get("p_ReactionTime", 30))
+        response_factor = int(p.get("p_ResponseFactor", 8))
+        recovery_time = int(p.get("p_RecoveryTime", 5))
+
+        hyst_flag = int(p.get("p_hysteresisFlag", 0))
+        rate_smoothing = int(p.get("p_RateSmoothing", 0))
 
         payload = struct.pack(
-            "<BBBHHHHH",
-            pacing_state,
+            "<BBBBHHHBBHHHHBBBBBB4x",
             pacing_mode,
-            hyst_flag,
-            hysteresis,
-            lowrate_interval,
-            v_amp,
-            int(round(v_pw_ms * 10.0)),
+            lrl,
+            url,
+            max_sensor_rate,
+            arp,
             vrp,
+            pvarp,
+            int(round(a_pw_ms)),
+            int(round(v_pw_ms)),
+            a_amp_raw,
+            v_amp_raw,
+            a_sens_raw,
+            v_sens_raw,
+            activity_th,
+            reaction_time,
+            response_factor,
+            recovery_time,
+            hyst_flag,
+            rate_smoothing,
         )
 
         return self.build_packet(K_PPARAMS, payload)
-
 
     def send_parameters(self, params: Dict[str, Any], mode: int = 0) -> bool:
         """High-level helper to send programmable parameters."""
@@ -234,33 +260,24 @@ class SerialManager:
         """Send K_ESTOP (13 zero data bytes, DataChk=0)."""
         return self.send_data(self.build_packet(K_ESTOP))
 
-    # ---------- Full-frame read & parse (Rx) ----------
     def read_packet(self, timeout: float = 2.0) -> bytes:
-        """
-        Read one full framed packet:
-          4 bytes header + 13 bytes data + 1 byte data checksum = 18 bytes total.
-        Returns b'' on failure or timeout.
-        """
         try:
             sp = self._port()
             old_to = sp.timeout
             sp.timeout = timeout
 
-            pkt = sp.read(18)
+            total_len = 4 + N_DATA + 1
+            pkt = sp.read(total_len)
             sp.timeout = old_to
-            if len(pkt) != 18:
+            if len(pkt) != total_len:
                 return b""
             return pkt
         except Exception:
             return b""
 
     def parse_packet(self, pkt: bytes) -> Optional[Dict[str, Any]]:
-        """
-        Verify header/data checksums and return a dict on success:
-            {"fn": int, "data": bytes, "header_ok": True, "data_ok": True}
-        Return None if anything is invalid.
-        """
-        if len(pkt) != 18:
+        expected_len = 4 + N_DATA + 1
+        if len(pkt) != expected_len:
             return None
 
         sync, soh, fn, hdr_chk = pkt[0], pkt[1], pkt[2], pkt[3]
@@ -269,54 +286,66 @@ class SerialManager:
         if f_chk(bytes([sync, soh, fn])) != hdr_chk:
             return None
 
-        data = pkt[4:17]
-        data_chk = pkt[17]
+        data_start = 4
+        data_end = 4 + N_DATA
+        data = pkt[data_start:data_end]
+        data_chk = pkt[data_end]
 
         if fn == K_PPARAMS:
-            # For parameter packets, DataChk must be XOR of the 13 data bytes
             if f_chk(data) != data_chk:
                 return None
         if fn == K_EGRAM:
-            return {"fn": fn, "data": pkt[4:17], "header_ok": True, "data_ok": True}
-
+            return {"fn": fn, "data": data, "header_ok": True, "data_ok": True}
         else:
-            # For non-parameter commands, data must be all zeros and DataChk must be 0
             if any(data) or data_chk != 0:
                 return None
 
         return {"fn": fn, "data": data, "header_ok": True, "data_ok": True}
 
-    # ---------- Optional decoders ----------
     @staticmethod
     def decode_params(data: bytes) -> Dict[str, Any]:
-        """
-        Decode 13-byte parameter payload to a dictionary.
-        The 3rd byte is reserved and ignored.
-        """
         if len(data) != N_DATA:
             raise ValueError("params data length error")
-        (pacing_state, pacing_mode, _reserved,
-         hys_int, lowrate_int, v_amp, v_width_10x, vrp) = struct.unpack("<BBBHHHHH", data)
+
+        (pacing_mode,
+         lrl,
+         url,
+         max_sensor_rate,
+         arp,
+         vrp,
+         pvarp,
+         a_pw,
+         v_pw,
+         a_amp_raw,
+         v_amp_raw,
+         a_sens_raw,
+         v_sens_raw,
+         activity_th,
+         reaction_time,
+         response_factor,
+         recovery_time,
+         hyst_flag,
+         rate_smoothing) = struct.unpack("<BBBBHHHBBHHHHBBBBBB4x", data)
+
         return {
-            "p_pacingState": pacing_state,
             "p_pacingMode": pacing_mode,
-            "p_hysteresisInterval": hys_int,
-            "p_lowrateInterval": lowrate_int,
-            "p_vPaceAmp": v_amp,
-            "p_vPaceWidth": (v_width_10x / 10.0),  # back to milliseconds
+            "p_LRL": lrl,
+            "p_URL": url,
+            "p_MaxSensorRate": max_sensor_rate,
+            "p_ARP": arp,
             "p_VRP": vrp,
+            "p_PVARP": pvarp,
+            "p_aPaceWidth": float(a_pw),
+            "p_vPaceWidth": float(v_pw),
+            "p_aPaceAmp": a_amp_raw,
+            "p_vPaceAmp": v_amp_raw,
+            "p_aSens": a_sens_raw,
+            "p_vSens": v_sens_raw,
+            "p_ActivityThreshold": activity_th,
+            "p_ReactionTime": reaction_time,
+            "p_ResponseFactor": response_factor,
+            "p_RecoveryTime": recovery_time,
+            "p_hysteresisFlag": hyst_flag,
+            "p_RateSmoothing": rate_smoothing,
         }
 
-    @staticmethod
-    def decode_egram(data: bytes) -> Dict[str, Any]:
-        """
-        Decode egram data area:
-          Data[0:2] -> m_vraw (uint16, little-endian)
-          Data[2:4] -> marker (2 chars)
-          Remaining bytes are zeros.
-        """
-        if len(data) != N_DATA:
-            raise ValueError("egram data length error")
-        m_vraw = struct.unpack("<H", data[0:2])[0]
-        marker = data[2:4].decode(errors="ignore")
-        return {"m_vraw": m_vraw, "marker": marker}
