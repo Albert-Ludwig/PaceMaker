@@ -1,10 +1,15 @@
-# This class is used to draw the EG diagram (Egram). 
-# For D1, only data structure and windows are provided.
-
-import time, threading, struct, tkinter as tk, queue
-from tkinter import ttk, Canvas
+# This class is used to draw the EG diagram (Egram) using Matplotlib.
+import time, threading, queue
+import tkinter as tk
+from tkinter import ttk, messagebox
 from collections import deque
-from tkinter import messagebox
+
+# --- Matplotlib imports ---
+import matplotlib
+matplotlib.use("TkAgg") # Ensure we use the Tkinter backend
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+# --------------------------
 
 class EgramModel: # Model to hold EGdiagram data buffers
     def __init__(self, time_span_s=8.0, sample_rate=200, gain=1.0, hp_filter_ecg=False):
@@ -19,218 +24,173 @@ class EgramModel: # Model to hold EGdiagram data buffers
         }
         self.gain = gain
         self.hp_filter_ecg = hp_filter_ecg
-        self.markers = []  # Reserved for future use (not displayed in D1)
+        self.markers = []
 
-    def append_batch(self, batch):  # batch: [(t, vAtrial, vVentricular, vECG), ...]
+    def append_batch(self, batch):
         for t, atrial, ventricular, ecg in batch:
             self.buffers["Atrial EGM"].append((t, atrial))
             self.buffers["Ventricular EGM"].append((t, ventricular))
             self.buffers["Surface ECG"].append((t, ecg))
 
-class EgramController: # Controller to manage data streaming and drawing
-    def __init__(self, model, view, source, tk_root, refresh_ms=25):
+class EgramController: # Controller
+    def __init__(self, model, view, source, tk_root, refresh_ms=50):
         self.model, self.view, self.source = model, view, source
         self.tk_root, self.refresh_ms = tk_root, refresh_ms
         self.q = queue.Queue()
         self.running = False
         self.thread = None
 
-    def start(self): # Start data streaming and drawing
+    def start(self):
         if self.running: return
         self.running = True
         self.thread = threading.Thread(target=self._producer, daemon=True)
         self.thread.start()
         self._draw_loop()
 
-    def stop(self): # Stop data streaming and drawing
+    def stop(self):
         self.running = False
 
-    def _producer(self): # Data producer thread
-        for chunk in self.source.stream():  # Generator: yield [(t,atrial,ventricular,ecg), ...]
+    def _producer(self):
+        for chunk in self.source.stream():
             if not self.running: break
             self.q.put(chunk)
 
-    def _draw_loop(self): # Periodic drawing in main thread
+    def _draw_loop(self):
         try:
             while not self.q.empty():
                 self.model.append_batch(self.q.get_nowait())
-            self.view.render(self.model)  # Draw in main thread
-        finally:
+            
             if self.running:
+                self.view.render(self.model)
                 self.tk_root.after(self.refresh_ms, self._draw_loop)
+        except Exception:
+            pass
 
-class EgramView(tk.Canvas): # Canvas to render EGdiagram
+# --- Modified EgramView with Dragging Support ---
+class EgramView(tk.Frame): 
     def __init__(self, parent, **kw):
-        super().__init__(parent, bg="white", **kw)
+        super().__init__(parent, **kw)
         self.show = {"Atrial EGM": True, "Ventricular EGM": True, "Surface ECG": True}
-        self.colors = {"Atrial EGM":"red", "Ventricular EGM":"green", "Surface ECG":"blue"}
-        self.zoom = 1.0 # Zoom factor 
-        # Pan state (in seconds)
+        self.colors = {"Atrial EGM": "red", "Ventricular EGM": "green", "Surface ECG": "blue"}
+        self.zoom = 1.0 
         self.pan_offset_s = 0.0
         self._drag_x = None
-        # Mouse bindings for panning
-        self.bind("<ButtonPress-1>", self._on_press)
-        self.bind("<B1-Motion>", self._on_drag)
-        self.bind("<ButtonRelease-1>", self._on_release)
-        self.bind("<Double-Button-1>", self._on_reset_pan)
 
-    # --- Mouse handlers for panning ---
-    def _on_press(self, ev): # Start panning
+        # 1. Setup Figure and Axes
+        self.figure = Figure(figsize=(5, 4), dpi=100)
+        self.ax = self.figure.add_subplot(111)
+        
+        self.ax.set_xlabel("Time (s)")
+        self.ax.set_ylabel("Amplitude (mV)")
+        self.ax.grid(True, linestyle='--', alpha=0.6)
+
+        # 2. Initialize Lines
+        self.lines = {}
+        for name in ["Atrial EGM", "Ventricular EGM", "Surface ECG"]:
+            line, = self.ax.plot([], [], label=name, color=self.colors[name], linewidth=1)
+            self.lines[name] = line
+        
+        self.ax.legend(loc='upper right', fontsize='small')
+
+        # 3. Embed into Tkinter
+        self.canvas_agg = FigureCanvasTkAgg(self.figure, master=self)
+        self.canvas_widget = self.canvas_agg.get_tk_widget()
+        self.canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+        # 4. Bind Events
+        self.canvas_widget.bind("<ButtonPress-1>", self._on_press)
+        self.canvas_widget.bind("<B1-Motion>", self._on_drag)
+        self.canvas_widget.bind("<ButtonRelease-1>", self._on_release)
+        self.canvas_widget.bind("<Double-Button-1>", self._on_reset_pan)
+
+    def _on_press(self, ev):
         self._drag_x = ev.x
 
-    def _on_drag(self, ev): # Update panning
-        if self._drag_x is None or not hasattr(self, "_last_model"):
+    def _on_drag(self, ev):
+        # Only drag if we have a reference to the last time span
+        if self._drag_x is None or not hasattr(self, "_last_span"):
             return
-        w = self.winfo_width()
-        span = self._last_model.time_span_s
-        # pixels -> seconds
+        
+        w = self.canvas_widget.winfo_width()
         dx_px = ev.x - self._drag_x
         self._drag_x = ev.x
-        dx_s = -dx_px * (span / max(w, 1))  # drag left -> look earlier
-        # update and clamp pan offset
-        self.pan_offset_s = max(0.0, min(self._max_pan(self._last_model), self.pan_offset_s + dx_s))
-        self.render(self._last_model)
+        
+        # Convert pixels to seconds
+        # Dragging right (positive dx) -> See past -> Increase offset
+        dx_s = dx_px * (self._last_span / max(w, 1))
+        
+        # Update pan offset
+        self.pan_offset_s = max(0.0, self.pan_offset_s + dx_s)
+        
+        # Force redraw if we have data
+        if hasattr(self, "_last_model"):
+            self.render(self._last_model)
 
-    def _on_release(self, ev): # End panning
+    def _on_release(self, ev):
         self._drag_x = None
 
-    def _on_reset_pan(self, ev): # Double-click to reset pan
+    def _on_reset_pan(self, ev):
         self.pan_offset_s = 0.0
+        # Force redraw
         if hasattr(self, "_last_model"):
             self.render(self._last_model)
 
-    def _max_pan(self, model): # Maximum pan (in seconds) available based on buffered history.
-        """Maximum pan (in seconds) available based on buffered history."""
-        buf = model.buffers["Surface ECG"]
-        if len(buf) < 2:
-            return 0.0
-        t_min = buf[0][0]
-        t_max = buf[-1][0]
-        history = max(0.0, (t_max - t_min) - model.time_span_s)
-        return history
+    def set_zoom(self, factor: float):
+        self.zoom = factor
 
     def render(self, model):
-        # keep a handle so drag events can re-render
-        self._last_model = model
-
-        w, h = self.winfo_width(), self.winfo_height()
-        self.delete("all")
+        self._last_model = model # Save reference for dragging
+        self._last_span = model.time_span_s
         
-        # Draw axes with labels
-        self._draw_axes_and_labels(w, h)
-        
-        # Draw grid (1s major grid, 0.2s minor grid)
-        self._draw_grid(w, h, model.time_span_s)
-        
-        # Get X/Y scaling with margins for axes
-        margin_left = 60  # Space for Y axis label
-        margin_bottom = 30  # Space for X axis label
-        plot_w = w - margin_left
-        plot_h = h - margin_bottom
-        
-        sx = plot_w / model.time_span_s
-        # Y axis, use fixed amplitude window (e.g. ±2.5 mV), then multiply by gain
-        y_range_mv = 2.5 / model.gain
-        sy = plot_h / (2*y_range_mv)  # Map ±y_range to canvas
-        y_mid = plot_h/2
-
-        # Determine time window [t0, t1]
-        any_buf = model.buffers["Surface ECG"]
-        if not any_buf:
+        buf = model.buffers["Surface ECG"]
+        if not buf:
             return
-        t_end = any_buf[-1][0]  # latest timestamp we have
-        max_pan = self._max_pan(model)
-        self.pan_offset_s = max(0.0, min(max_pan, self.pan_offset_s))
-        t0 = max(any_buf[0][0], t_end - model.time_span_s - self.pan_offset_s)
-        t1 = t0 + model.time_span_s
 
-        def to_xy(buf):
-            if not buf: return []
-            pts=[]
-            # Only draw points within [t0, t1]
-            for t,v in buf:
-                if t < t0:
-                    continue
-                if t > t1:
-                    break
-                x = margin_left + (t - t0)*sx
-                y = y_mid - (v * self.zoom) * sy
-                pts += [x,y]
-            return pts
+        t_end = buf[-1][0]
+        # Limit pan so we don't go past history
+        max_history = buf[-1][0] - buf[0][0]
+        max_pan = max(0.0, max_history - model.time_span_s)
+        self.pan_offset_s = min(self.pan_offset_s, max_pan)
 
-        for ch in ("Atrial EGM","Ventricular EGM","Surface ECG"):
-            if not self.show[ch]: continue
-            pts = to_xy(model.buffers[ch])
-            if len(pts)>=4:
-                self.create_line(*pts, fill=self.colors[ch], width=2, smooth=False)
-    
-        label = f"X{self.zoom:g}"
-        self.create_text(
-            self.winfo_width() - 8, 12,
-            text=label,
-            anchor="ne",
-            fill="blue",
-            font=("TkDefaultFont", 12, "bold")
-        )
+        t1 = t_end - self.pan_offset_s
+        t0 = t1 - model.time_span_s
 
-    def _draw_grid(self, w, h, span_s):
-        # Grid with margins
-        margin_left = 60
-        margin_bottom = 30
-        plot_w = w - margin_left
-        plot_h = h - margin_bottom
+        # Update Lines
+        for name, line in self.lines.items():
+            if not self.show[name]:
+                line.set_data([], [])
+                continue
+            
+            data = model.buffers[name]
+            if not data:
+                continue
+                
+            # Convert deque to lists for plotting
+            xs = [p[0] for p in data]
+            ys = [p[1] for p in data]
+            
+            line.set_data(xs, ys)
+
+        # Update Limits
+        self.ax.set_xlim(t0, t1)
         
-        # Vertical lines
-        major=1.0; minor=0.2
-        x_per_s = plot_w/span_s
-        for i in range(int(span_s/minor)+1):
-            x = margin_left + i*minor*x_per_s
-            self.create_line(x, 0, x, plot_h, fill="#eee" if i%5 else "#ccc")
-        # Horizontal lines
-        for i in range(10):
-            y = i*plot_h/10
-            self.create_line(margin_left, y, w, y, fill="#eee" if i%5 else "#ccc")
+        limit = (2.5 / model.gain) / self.zoom
+        self.ax.set_ylim(-limit, limit)
 
-    def _draw_axes_and_labels(self, w, h):
-        """Draw X/Y axes with simple labels."""
-        margin_left = 60
-        margin_bottom = 30
-        plot_w = w - margin_left
-        plot_h = h - margin_bottom
-        
-        # Draw axes
-        # Y axis (left side)
-        self.create_line(margin_left, 0, margin_left, plot_h, fill="#000", width=2)
-        # X axis (bottom)
-        self.create_line(margin_left, plot_h, w, plot_h, fill="#000", width=2)
-        
-        # Y axis label (rotated "Amplitude")
-        self.create_text(20, plot_h/2, text="Amplitude", angle=90, anchor="center", 
-                        fill="#000", font=("TkDefaultFont", 12))
-        
-        # X axis label
-        self.create_text(margin_left + plot_w/2, h - 10, text="Time", anchor="center",
-                        fill="#000", font=("TkDefaultFont", 12))
-    
-    def set_zoom(self, factor: float):
-        """Set the zoom factor"""
-        self.zoom = factor
-        if hasattr(self, "_last_model"):
-            self.render(self._last_model)
+        self.canvas_agg.draw_idle()
 
+# -----------------------------------------------------------
 
-class EgramWindow: # EGdiagram window
+class EgramWindow:
     def __init__(self, parent, comm_manager=None):
         self.comm_manager = comm_manager
         self.window = tk.Toplevel(parent)
         self.window.title("EG Diagram")
         self.window.geometry("1100x700")
         
-        # Create control panel
         control_frame = ttk.Frame(self.window)
         control_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        # Add control buttons
         self.start_btn = ttk.Button(control_frame, text="Start", command=self.start_egram)
         self.start_btn.pack(side=tk.LEFT, padx=5)
 
@@ -240,11 +200,9 @@ class EgramWindow: # EGdiagram window
         self.clear_btn = ttk.Button(control_frame, text="Clear", command=self.clear_egram)
         self.clear_btn.pack(side=tk.LEFT, padx=5)
         
-        # state of the EGdiagram
         self._is_running = False
         self._update_buttons()
 
-        # Zoom controls
         ttk.Label(control_frame, text="Zoom:").pack(side=tk.LEFT, padx=(10, 2))
         for z in (0.5, 1, 2):
             ttk.Button(
@@ -253,7 +211,6 @@ class EgramWindow: # EGdiagram window
                 command=lambda f=z: self.canvas.set_zoom(f)
             ).pack(side=tk.LEFT, padx=2)
         
-        # Add channel selection
         self.channel_vars = {
             "Atrial EGM": tk.BooleanVar(value=True),
             "Ventricular EGM": tk.BooleanVar(value=True),
@@ -264,19 +221,16 @@ class EgramWindow: # EGdiagram window
             ttk.Checkbutton(control_frame, text=channel, variable=var, 
                            command=self.update_display).pack(side=tk.LEFT, padx=5)
         
-        # Create EGdiagram canvas
-        self.canvas = EgramView(self.window, width=780, height=500)
+        # Changed to use new EgramView (Frame + Matplotlib)
+        self.canvas = EgramView(self.window)
         self.canvas.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
-        # Initialize EGdiagram model and controller
         self.model = EgramModel()
         self.controller = None
         
-        # Set window close event
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
     
     def _update_buttons(self):
-        """Keep Start/Stop/Clear buttons consistent with current running state."""
         running = bool(getattr(self, "_is_running", False))
         try:
             self.start_btn.configure(state=("disabled" if running else "normal"))
@@ -286,20 +240,19 @@ class EgramWindow: # EGdiagram window
             pass
 
     def start_egram(self):
-        """Start EGdiagram data stream"""
         if getattr(self, "_is_running", False):
-            messagebox.showwarning("Warning", "Egram is already running. Please press Stop first.")
+            messagebox.showwarning("Warning", "Egram is already running.")
             return
 
         if self.comm_manager is None:
-            messagebox.showerror("Error", "Pacemaker not available. Please connect first.")
+            messagebox.showerror("Error", "Pacemaker not available.")
             return
         try:
             is_connected = self.comm_manager.get_connection_status()
         except Exception:
             is_connected = False
         if not is_connected:
-            messagebox.showerror("Error", "Pacemaker not connected. Please connect first.")
+            messagebox.showerror("Error", "Pacemaker not connected.")
             return
 
         source = PacemakerEgramSource(self.comm_manager)
@@ -310,10 +263,6 @@ class EgramWindow: # EGdiagram window
         self._poll_connection()
 
     def _poll_connection(self):
-        """
-        Periodically check if pacemaker is still connected.
-        If disconnected while plotting, stop the egram immediately.
-        """
         if not getattr(self, "_is_running", False):
             return
         if self.comm_manager is None:
@@ -332,7 +281,6 @@ class EgramWindow: # EGdiagram window
             pass
 
     def stop_egram(self):
-        """Stop EGdiagram data stream"""
         try:
             if self.controller:
                 self.controller.stop()
@@ -342,15 +290,11 @@ class EgramWindow: # EGdiagram window
         self._update_buttons()
     
     def clear_egram(self):
-        """Clear EGdiagram display"""
         if self._is_running:
             messagebox.showwarning("Warning", "Stop the Egram before clearing.")
             return
 
-        ok = messagebox.askyesno(
-            "Confirm",
-            "This option will clear the history signal, still want to clear?"
-        )
+        ok = messagebox.askyesno("Confirm", "Clear history signal?")
         if not ok:
             return
 
@@ -360,19 +304,12 @@ class EgramWindow: # EGdiagram window
         self.canvas.render(self.model)
     
     def update_display(self):
-        """Update channel display status"""
         for channel, var in self.channel_vars.items():
             self.canvas.show[channel] = var.get()
         self.canvas.render(self.model)
     
     def on_close(self):
         if getattr(self, "_is_running", False):
-            ok = messagebox.askyesno(
-                "Confirm Exit",
-                "Egram is still running. Do you want to stop and close the window?"
-            )
-            if not ok:
-                return
             try:
                 self.stop_egram()
             except Exception:
@@ -386,61 +323,47 @@ class PacemakerEgramSource:
         self.time = 0.0
 
     def stream(self):
-        if self.comm_manager is None:
-            return
+        if self.comm_manager is None: return
         try:
-            is_connected = self.comm_manager.get_connection_status()
-        except Exception:
-            is_connected = False
-        if not is_connected:
-            return
+            if not self.comm_manager.get_connection_status(): return
+        except: return
 
         serial_mgr = getattr(self.comm_manager, "serial_mgr", None)
-        if serial_mgr is None:
-            return
-        try:
-            if not serial_mgr.is_connected():
-                return
-        except Exception:
-            return
+        if not serial_mgr or not serial_mgr.is_connected(): return
 
         try:
-            ok = serial_mgr.start_egram()
-        except Exception:
-            return
-        if not ok:
-            return
+            if not serial_mgr.start_egram(): return
+        except: return
 
         try:
             while True:
                 try:
-                    if not self.comm_manager.get_connection_status():
-                        break
-                    if not serial_mgr.is_connected():
-                        break
-                except Exception:
-                    break
+                    if not self.comm_manager.get_connection_status(): break
+                except: break
 
                 batch = []
-                for _ in range(20):
-                    pkt = serial_mgr.read_packet(timeout=0.2)
-                    if not pkt:
-                        continue
-                    data = pkt[4:17]
-                    decoded = serial_mgr.decode_egram(data)
-                    m_vraw = decoded.get("m_vraw", 0)
+                for _ in range(10): 
+                    pkt = serial_mgr.read_packet(timeout=0.1)
+                    if not pkt: continue
+                    
+                    if hasattr(serial_mgr, "decode_egram"):
+                        decoded = serial_mgr.decode_egram(pkt[4:17])
+                        m_vraw = decoded.get("m_vraw", 2048)
+                    else:
+                        # Fallback logic if decode_egram is missing
+                        try:
+                            m_vraw = 2048 
+                        except: m_vraw = 2048
 
                     v_signal = (m_vraw - 2048) / 2048.0
                     t = self.time
-                    batch.append((t, 0.0, v_signal, 0.0))
+                    batch.append((t, 0.0, 0.0, v_signal))
                     self.time += 1.0 / self.sample_rate
 
                 if batch:
                     yield batch
                 else:
-                    time.sleep(0.05)
+                    time.sleep(0.01)
         finally:
-            try:
-                serial_mgr.stop_egram()
-            except Exception:
-                pass
+            try: serial_mgr.stop_egram()
+            except: pass
