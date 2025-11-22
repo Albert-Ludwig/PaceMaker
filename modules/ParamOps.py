@@ -1,9 +1,11 @@
-# This file is used to store the modules for the parameter operations, including saving, loading, resetting, and applying parameters.
+# This module manages parameter saving, loading, resetting, and the GUI for parameter settings.
 import tkinter as tk
 from tkinter import ttk, messagebox
 import json
+import os
 from .mode_config import ParamEnum
 from typing import Optional
+
 try:
     from .Communication import PacemakerCommunication
 except ImportError:
@@ -17,20 +19,30 @@ class ParameterManager:
     def __init__(self):
         self.param = ParamEnum()
         self.defaults = DEFAULT_PARAMS.copy()
+        self.pacing_mode = "AOO"
 
     def save_params(self):
         try:
-            import os
-            os.makedirs("data", exist_ok=True)  # Ensure directory exists
+            os.makedirs("data", exist_ok=True)
+            
+            all_keys = set(self.defaults.keys())
+            for s in ParamEnum.MODES.values():
+                all_keys |= set(s)
             
             data = {}
-            for key in self.defaults:
+            data["Pacing_Mode"] = self.pacing_mode
+            
+            for key in all_keys:
                 getter = self._resolve_method(self.param, self._getter_candidates_for_key(key))
                 if getter:
-                    data[key] = getter()
+                    try:
+                        data[key] = getter()
+                    except Exception:
+                        pass
+            
             with open("data/parameters.json", "w") as f:
                 json.dump(data, f, indent=2)
-            messagebox.showinfo("Save", "Parameters saved successfully.")
+                
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
@@ -39,23 +51,29 @@ class ParameterManager:
             with open("data/parameters.json", "r") as f:
                 data = json.load(f)
             
-            loaded_mode = data.pop("Pacing_Mode", None)
+            loaded_mode = data.get("Pacing_Mode")
+            if loaded_mode and loaded_mode in MODES:
+                self.pacing_mode = loaded_mode
             
             for key, val in data.items():
+                if key == "Pacing_Mode":
+                    continue
                 setter = self._resolve_method(self.param, self._setter_candidates_for_key(key))
                 if setter:
-                    setter(val)
-            messagebox.showinfo("Load", "Parameters loaded successfully.")
-            return True, loaded_mode
+                    try:
+                        setter(val)
+                    except Exception:
+                        pass
+            return True
         except FileNotFoundError:
-            messagebox.showerror("Error", "No saved parameters found.")
-            return False, None
+            return False
         except Exception as e:
-            messagebox.showerror("Error", str(e))
-            return False, None
+            print(f"Error loading JSON: {e}")
+            return False
 
     def reset_params(self):
         self.param = ParamEnum()
+        self.pacing_mode = "AOO"
         messagebox.showinfo("Reset", "Parameters reset to defaults.")
         return True
 
@@ -89,8 +107,8 @@ class ParameterWindow:
     def __init__(self, parent, param_manager, comm_manager: Optional[PacemakerCommunication]):
         self.param_win = tk.Toplevel(parent)
         self._saved_ok = True
-        self._device_synced = False # check for the difference between hardware and software
-        self._applied_after_save = True # check if applied after last save
+        self._device_synced = False 
+        self._applied_after_save = True 
         self.param_win.title("Parameter Settings")
         self.param_win.geometry("900x500")
         self.param_manager = param_manager
@@ -99,13 +117,13 @@ class ParameterWindow:
 
         ttk.Label(self.param_win, text="Programmable Parameters", font=("Arial", 14)).pack(pady=10)
 
-        # Mode selection in popup
+        self.param_manager.load_params()
+        initial_mode = self.param_manager.pacing_mode
+
         ttk.Label(self.param_win, text="Select Pacing Mode:").pack()
-        self.mode_var = tk.StringVar(value=MODES[0])
+        self.mode_var = tk.StringVar(value=initial_mode)
         ttk.Combobox(self.param_win, textvariable=self.mode_var, values=MODES, state="readonly").pack()
 
-        # Parameter inputs in popup
-        
         main_param_frame = ttk.Frame(self.param_win)
         main_param_frame.pack(fill="x", expand=True, padx=10, pady=5)
 
@@ -170,7 +188,6 @@ class ParameterWindow:
             entry.pack(side="left", fill='x', expand=True, padx=5)
             self.param_entries[param] = entry
 
-        # Update entry states based on mode
         def _update_entry_states(*_):
             mode = self.mode_var.get()
             required = set(ParamEnum.MODES.get(mode, set()))  
@@ -195,7 +212,9 @@ class ParameterWindow:
         self.save_btn = ttk.Button(btn_frame, text="Save", command=self.save_and_round)
         self.save_btn.grid(row=0, column=1, padx=5)
 
-        ttk.Button(btn_frame, text="Load", command=self._load_with_refresh).grid(row=0, column=2, padx=5)
+        self.load_btn = ttk.Button(btn_frame, text="Load to Pacemaker", command=self._upload_from_json, state="disabled")
+        self.load_btn.grid(row=0, column=2, padx=5)
+        
         ttk.Button(btn_frame, text="Reset", command=self._reset_with_refresh).grid(row=0, column=3, padx=5)
 
     def _mark_unsaved(self, *args):
@@ -203,11 +222,11 @@ class ParameterWindow:
         self._device_synced = False
         try:
             self.apply_btn.configure(state="disabled")
+            self.load_btn.configure(state="disabled")
         except Exception:
             pass
     
     def _refresh_entries(self):
-        """refresh all entries based on current parameter values"""
         for param_name, entry in self.param_entries.items():
             getter = self.param_manager._resolve_method(
                 self.param_manager.param, 
@@ -215,18 +234,20 @@ class ParameterWindow:
             )
             if getter:
                 current_value = getter()
-                if param_name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
-                    entry.configure(state="readonly")
-                else:
+                
+                is_readonly = (str(entry.cget("state")) == "readonly")
+                if is_readonly:
                     entry.configure(state="normal")
                 
-                if param_name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
+                if isinstance(entry, ttk.Combobox):
                     entry.set(str(current_value))
-                else:
+                elif isinstance(entry, ttk.Entry):
                     entry.delete(0, "end")
                     entry.insert(0, str(current_value))
+                
+                if param_name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
+                    entry.configure(state="readonly")
 
-        # Update entry states based on current mode
         mode = self.mode_var.get()
         required = set(ParamEnum.MODES.get(mode, set()))
         for name, entry in self.param_entries.items():
@@ -238,77 +259,62 @@ class ParameterWindow:
             else:
                 entry.configure(state="disabled")
     
-    def _load_with_refresh(self):
-        """load parameters and refresh interface"""
-        if hasattr(self, "_applied_after_save") and not self._applied_after_save:
-            messagebox.showerror(
-                "Error",
-                "Please Apply current parameters before loading new ones."
-            )
+    def _upload_from_json(self):
+        if self.comm_manager is None or not self.comm_manager.get_connection_status():
+            messagebox.showerror("Connection Error", "Pacemaker is NOT connected. Cannot upload.")
             return
-        success, loaded_mode = self.param_manager.load_params()
+
+        success = self.param_manager.load_params()
+        if not success:
+            messagebox.showerror("File Error", "Failed to load parameters.json")
+            return
+
+        if self.param_manager.pacing_mode in MODES:
+            self.mode_var.set(self.param_manager.pacing_mode)
+        self._refresh_entries()
         
-        if success:
-            if loaded_mode and loaded_mode in MODES:
-                self.mode_var.set(loaded_mode)
-                
-            self._refresh_entries()
-            self._saved_ok = True
-            self.apply_btn.configure(state="normal")
+        mode_str = self.mode_var.get()
+        mode_int = MODES.index(mode_str)
+
+        params_to_send = {}
+        for key in DEFAULT_PARAMS.keys():
+            getter = self.param_manager._resolve_method(
+                self.param_manager.param, 
+                self.param_manager._getter_candidates_for_key(key)
+            )
+            if getter:
+                params_to_send[key] = getter()
+        
+        result = self.comm_manager.upload_parameters(
+            mode=mode_int, 
+            parameters=params_to_send
+        )
+        
+        if result['success']:
+            self._device_synced = True
+            messagebox.showinfo("Success", "JSON parameters loaded and uploaded to Pacemaker successfully!")
+        else:
             self._device_synced = False
-
-            if self.comm_manager and self.comm_manager.get_connection_status():
-                messagebox.showinfo("Upload", "JSON loaded. Now sending to pacemaker...")
-                
-                mode_str = self.mode_var.get()
-                mode_int = MODES.index(mode_str)
-
-                params_to_send = {}
-                for key in DEFAULT_PARAMS.keys():
-                    getter = self.param_manager._resolve_method(
-                        self.param_manager.param, 
-                        self.param_manager._getter_candidates_for_key(key)
-                    )
-                    if getter:
-                        params_to_send[key] = getter()
-                
-                result = self.comm_manager.upload_parameters(
-                    mode=mode_int, 
-                    parameters=params_to_send
-                )
-                
-                if result['success']:
-                    messagebox.showinfo("Upload Success", "Parameters successfully sent to pacemaker.")
-                    self._device_synced = True
-                else:
-                    messagebox.showerror("Upload Error", f"Failed to send to pacemaker: {result['message']}")
-                    self._device_synced = False
-            
-            elif self.comm_manager:
-                messagebox.showwarning("Upload Skipped", "Parameters loaded from JSON, but not connected to pacemaker.")
-                self._device_synced = False
-            
-            else:
-                messagebox.showwarning("Upload Skipped", "Parameters loaded from JSON. (Offline Mode)")
-                self._device_synced = False
+            messagebox.showerror("Upload Failed", f"Device communication error: {result['message']}")
 
     def _reset_with_refresh(self):
-        """reset parameters and refresh interface"""
         success = self.param_manager.reset_params()
         if success:
+            self.mode_var.set(self.param_manager.pacing_mode)
             self._refresh_entries()
-            self._saved_ok = True
-            self.apply_btn.configure(state="normal")
+            self._saved_ok = False
             self._device_synced = False
+            self.apply_btn.configure(state="disabled")
+            self.load_btn.configure(state="disabled")
 
     def save_and_round(self):
-        import json, os
         mode = self.mode_var.get()
         required = set(ParamEnum.MODES.get(mode, set()))
         self._device_synced = False
         self._applied_after_save = False
         try:
             self.apply_btn.configure(state="disabled")
+            self.load_btn.configure(state="disabled")
         except Exception:
             pass
         errors = []
@@ -319,10 +325,7 @@ class ParameterWindow:
             if str(entry.cget("state")) == "disabled":
                 continue
             
-            if name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
-                raw = entry.get()
-            else:
-                raw = entry.get()
+            raw = entry.get()
             
             setter_name = f"set_{name}"
             if not hasattr(self.param_manager.param, setter_name):
@@ -338,7 +341,6 @@ class ParameterWindow:
             self._saved_ok = False
             return
         
-        # Refresh display with rounded values
         for name in required:
             if name not in self.param_entries:
                 continue
@@ -347,37 +349,22 @@ class ParameterWindow:
             if hasattr(self.param_manager.param, getter_name):
                 try:
                     v = getattr(self.param_manager.param, getter_name)()
-                    if name in {"Activity_Threshold", "Hysteresis", "Rate_Smoothing"}:
-                        entry.configure(state="readonly")
-                        entry.set(str(v))
+                    if str(entry.cget("state")) == "readonly":
+                        if hasattr(entry, "set"):
+                             entry.set(str(v))
                     else:
-                        entry.configure(state="normal")
                         entry.delete(0, "end")
                         entry.insert(0, str(v))
                 except Exception:
                     pass
         
-        # Save all parameters to JSON
-        all_keys = set()
-        for s in ParamEnum.MODES.values():
-            all_keys |= set(s)
-        data = {}
-        
-        data["Pacing_Mode"] = mode
-        
-        for key in all_keys:
-            g = f"get_{key}"
-            if hasattr(self.param_manager.param, g):
-                try:
-                    data[key] = getattr(self.param_manager.param, g)()
-                except Exception:
-                    pass
-        os.makedirs("data", exist_ok=True)
-        with open(os.path.join("data", "parameters.json"), "w") as f:
-            json.dump(data, f, indent=2)
+        self.param_manager.pacing_mode = mode
+        self.param_manager.save_params()
+
         self._saved_ok = True
         try:
             self.apply_btn.configure(state="normal")
+            self.load_btn.configure(state="disabled")
         except Exception:
             pass
         messagebox.showinfo("Saved", "The newest input values are rounded and saved.")
@@ -401,8 +388,14 @@ class ParameterWindow:
                 entry.configure(state="disabled")
         
         self._applied_after_save = True  
+        self.param_manager.pacing_mode = mode
 
-        messagebox.showinfo("Apply", f"Mode {mode} applied.")
+        try:
+            self.load_btn.configure(state="normal")
+        except Exception:
+            pass
+
+        messagebox.showinfo("Apply", f"Mode {mode} applied locally.")
 
     def _on_close(self):
         if not getattr(self, "_saved_ok", False):

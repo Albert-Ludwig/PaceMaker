@@ -40,3 +40,5 @@
 ### 6. Communication 和 serial
 
 创建一个 serial 的底层文件，里面实现通讯的内部细节，communication 来实现它。communication 负责实现所有读取的内容和读取什么，然后发送给其他文件。读取的数据比较的函数在这里实现，然后 paramOps 调用就行，比较的容忍值按照参数表来。
+
+#### 传输逻辑：

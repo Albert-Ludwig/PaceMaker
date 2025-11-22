@@ -172,16 +172,7 @@ class SerialManager:
         return header, header_chksum
 
     def build_packet(self, fn_code: int, data: bytes = b'') -> bytes:
-        """
-        Build a full packet:
-          [SYNC][SOH][FnCode][HeaderChk][Data(13)][DataChk]
-        Rules enforced here:
-          - Every command must carry exactly 13 data bytes.
-          - For non-parameter commands (ECHO/EGRAM/ESTOP):
-                Data must be all zeros and DataChk must be 0.
-          - For parameter command (K_PPARAMS):
-                DataChk is XOR of the 13 data bytes.
-        """
+        
         header, header_chksum = self._build_header(fn_code)
 
         # Ensure data is exactly 13 bytes according to the command type
@@ -194,34 +185,34 @@ class SerialManager:
 
         return header + bytes([header_chksum]) + data + bytes([data_chksum])
 
-    def build_data_packet(self, *, mode: int, params: Dict[str, Any]) -> bytes:
-        """
-        Build K_PPARAMS packet with a 13-byte parameter payload (little-endian):
-
-            B  p_pacingState
-            B  p_pacingMode
-            B  RESERVED (always 0)          <-- was hysteresis flag; not exposed here
-            H  p_hysteresisInterval         <-- kept for compatibility; caller may ignore
-            H  p_lowrateInterval
-            H  p_vPaceAmp
-            H  (10 * p_vPaceWidth)          <-- width encoded in 0.1 ms units (uint16)
-            H  p_VRP
-
-        The layout totals 13 data bytes (B B B H H H H H).
-        """
+    def build_data_packet(self, mode, params):
         p = params or {}
+
+        pacing_state = int(p.get("p_pacingState", 1))
+        pacing_mode = int(p.get("p_pacingMode", mode))
+        hyst_flag = int(p.get("p_hysteresisFlag", 0))
+
+        lowrate_interval = int(p.get("p_lowrateInterval", 1000))
+        hysteresis = int(p.get("p_hysteresisInterval", lowrate_interval))
+
+        v_amp = int(p.get("p_vPaceAmp", 500))
+        v_pw_ms = float(p.get("p_vPaceWidth", 1.0))
+        vrp = int(p.get("p_VRP", 320))
+
         payload = struct.pack(
             "<BBBHHHHH",
-            _u8(p.get("p_pacingState", 0)),
-            _u8(p.get("p_pacingMode", mode)),
-            0,  # RESERVED
-            _u16(p.get("p_hysteresisInterval", 300)),
-            _u16(p.get("p_lowrateInterval", 1000)),
-            _u16(p.get("p_vPaceAmp", 3500)),
-            _u16(int(round(float(p.get("p_vPaceWidth", 0.4)) * 10.0))),
-            _u16(p.get("p_VRP", 320)),
+            pacing_state,
+            pacing_mode,
+            hyst_flag,
+            hysteresis,
+            lowrate_interval,
+            v_amp,
+            int(round(v_pw_ms * 10.0)),
+            vrp,
         )
+
         return self.build_packet(K_PPARAMS, payload)
+
 
     def send_parameters(self, params: Dict[str, Any], mode: int = 0) -> bool:
         """High-level helper to send programmable parameters."""

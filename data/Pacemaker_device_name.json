@@ -1,9 +1,13 @@
 {
-  "last_connected_device_name": "PACEMAKER-003",
+  "last_connected_device_name": "PACEMAKER-002",
   "devices": [
     {
       "port": "/dev/cu.usbmodem0006210000001",
       "name": "PACEMAKER-001"
+    },
+    {
+      "port": "/dev/cu.Bluetooth-Incoming-Port",
+      "name": "PACEMAKER-002"
     }
   ]
 }

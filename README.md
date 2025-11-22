@@ -234,3 +234,7 @@ self.source = SerialEgramSource(...)
 删除了 noise 和 out of range 的部分，没啥用目前。
 新增了一个功能可以存储最多 10 个不同的 Pacemaker，并且给他们编号。
 修改了 new device 的逻辑，现在把 last device 存到 Pacemaker_device_name.json 里面，修复了之前不弹出 new device 的问题。
+
+## 11/21
+
+现在的问题在于，13bit 的传输不能把所有必要的参数都传进去，所以需要考虑加长。我已经修改好了传输值都是一样的的问题，目前在考虑 expand。同时，修改了 load 和表现，现在只上传，不从 JSON 里面加载。
