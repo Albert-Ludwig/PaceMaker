@@ -120,7 +120,7 @@ class SerialManager:
         if not isinstance(data, (bytes, bytearray)):
             return False
         try:
-            print(f"[TX List]: {list(data)}") # 测试
+            print(f"[TX List]: {list(data)}") # Debug
             sp = self._port()
             n = sp.write(data)
             sp.flush()
@@ -176,7 +176,7 @@ class SerialManager:
         
         header, header_chksum = self._build_header(fn_code)
 
-        # Ensure data is exactly 13 bytes according to the command type
+        # Ensure data is exactly 30 bytes according to the command type
         if fn_code == K_PPARAMS:
             data = (data + b'\x00' * N_DATA)[:N_DATA]
             data_chksum = f_chk(data)
@@ -308,43 +308,65 @@ class SerialManager:
             raise ValueError("params data length error")
 
         (pacing_mode,
-         lrl,
-         url,
-         max_sensor_rate,
-         arp,
-         vrp,
-         pvarp,
-         a_pw,
-         v_pw,
-         a_amp_raw,
-         v_amp_raw,
-         a_sens_raw,
-         v_sens_raw,
-         activity_th,
-         reaction_time,
-         response_factor,
-         recovery_time,
-         hyst_flag,
-         rate_smoothing) = struct.unpack("<BBBBHHHBBHHHHBBBBBB4x", data)
+        lrl,
+        url,
+        max_sensor_rate,
+        arp,
+        vrp,
+        pvarp,
+        a_pw,
+        v_pw,
+        a_amp_raw,
+        v_amp_raw,
+        a_sens_raw,
+        v_sens_raw,
+        activity_th,
+        reaction_time,
+        response_factor,
+        recovery_time,
+        hyst_flag,
+        rate_smoothing) = struct.unpack("<BBBBHHHBBHHHHBBBBBB4x", data)
+
+        rate_smoothing_map = {
+            0: "Off", 1: "3%", 2: "6%", 3: "9%", 4: "12%",
+            5: "15%", 6: "18%", 7: "21%", 8: "25%"
+        }
+
+        activity_threshold_map = {
+            0: "V-Low", 1: "Low", 2: "Med-Low", 3: "Med",
+            4: "Med-High", 5: "High", 6: "V-High"
+        }
 
         return {
-            "p_pacingMode": pacing_mode,
-            "p_LRL": lrl,
-            "p_URL": url,
-            "p_MaxSensorRate": max_sensor_rate,
-            "p_ARP": arp,
-            "p_VRP": vrp,
-            "p_PVARP": pvarp,
-            "p_aPaceWidth": float(a_pw),
-            "p_vPaceWidth": float(v_pw),
-            "p_aPaceAmp": a_amp_raw,
-            "p_vPaceAmp": v_amp_raw,
-            "p_aSens": a_sens_raw,
-            "p_vSens": v_sens_raw,
-            "p_ActivityThreshold": activity_th,
-            "p_ReactionTime": reaction_time,
-            "p_ResponseFactor": response_factor,
-            "p_RecoveryTime": recovery_time,
-            "p_hysteresisFlag": hyst_flag,
-            "p_RateSmoothing": rate_smoothing,
+            "Pacing_Mode": pacing_mode,  # Changed from pacing_mode to Pacing_Mode
+            "Lower_Rate_Limit": lrl,
+            "Upper_Rate_Limit": url, 
+            "Maximum_Sensor_Rate": max_sensor_rate,
+            "ARP": arp,
+            "VRP": vrp,
+            "PVARP": pvarp,
+            "Atrial_Pulse_Width": float(a_pw),
+            "Ventricular_Pulse_Width": float(v_pw),
+            "Atrial_Amplitude": round(a_amp_raw / 100.0, 1),
+            "Ventricular_Amplitude": round(v_amp_raw / 100.0, 1),
+            "Atrial_Sensitivity": round(a_sens_raw / 100.0, 1),
+            "Ventricular_Sensitivity": round(v_sens_raw / 100.0, 1),
+            "Activity_Threshold": activity_threshold_map.get(activity_th, "Med"),
+            "Reaction_Time": reaction_time,
+            "Response_Factor": response_factor,
+            "Recovery_Time": recovery_time,
+            "Hysteresis": "On" if hyst_flag else "Off",
+            "Rate_Smoothing": rate_smoothing_map.get(rate_smoothing, "Off"),
+        }
+    
+    def decode_egram(self, data: bytes) -> Dict[str, Any]:
+        if len(data) != N_DATA:
+            raise ValueError(f"EGRAM data length must be {N_DATA}, got {len(data)}")
+        atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
+        ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
+        atr_amp = atr_raw_100 / 100.0
+        ven_amp = ven_raw_100 / 100.0
+        return {
+            "m_araw": atr_amp,
+            "m_vraw": ven_amp,
         }

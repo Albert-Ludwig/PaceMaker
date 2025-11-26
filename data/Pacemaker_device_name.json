@@ -1,5 +1,5 @@
 {
-  "last_connected_device_name": "PACEMAKER-004",
+  "last_connected_device_name": "PACEMAKER-005",
   "devices": [
     {
       "port": "/dev/cu.usbmodem0006210000001",
@@ -16,6 +16,10 @@
     {
       "port": "/dev/cu.usbmodem1303",
       "name": "PACEMAKER-004"
+    },
+    {
+      "port": "/dev/cu.SdKfzMaxwell",
+      "name": "PACEMAKER-005"
     }
   ]
 }

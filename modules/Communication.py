@@ -28,11 +28,7 @@ class PacemakerCommunication:
         ui_params = ui_params or {}
         p = {}
 
-        lrl_source = None
-        for k in ("Lower_Rate_Limit", "LRL", "LRL_bpm"):
-            if k in ui_params:
-                lrl_source = ui_params.get(k)
-                break
+        lrl_source = ui_params.get("Lower_Rate_Limit")
         try:
             lrl_bpm = float(lrl_source) if lrl_source is not None else 60.0
         except Exception:
@@ -59,7 +55,7 @@ class PacemakerCommunication:
         except Exception:
             p["p_ARP"] = 320
 
-        vrp_src = ui_params.get("VRP", ui_params.get("VRP_ms"))
+        vrp_src = ui_params.get("VRP")
         try:
             p["p_VRP"] = int(vrp_src) if vrp_src is not None else 320
         except Exception:
@@ -71,28 +67,28 @@ class PacemakerCommunication:
         except Exception:
             p["p_PVARP"] = 250
 
-        a_pw_src = ui_params.get("Atrial_Pulse_Width", ui_params.get("A_PW_ms"))
+        a_pw_src = ui_params.get("Atrial_Pulse_Width")
         try:
             a_pw_ms = float(a_pw_src) if a_pw_src is not None else 1.0
         except Exception:
             a_pw_ms = 1.0
         p["p_aPaceWidth"] = a_pw_ms
 
-        v_pw_src = ui_params.get("Ventricular_Pulse_Width", ui_params.get("V_PW_ms"))
+        v_pw_src = ui_params.get("Ventricular_Pulse_Width")
         try:
             v_pw_ms = float(v_pw_src) if v_pw_src is not None else 1.0
         except Exception:
             v_pw_ms = 1.0
         p["p_vPaceWidth"] = v_pw_ms
 
-        a_amp_src = ui_params.get("Atrial_Amplitude", ui_params.get("A_Amp_V"))
+        a_amp_src = ui_params.get("Atrial_Amplitude")
         try:
             a_amp_v = float(a_amp_src) if a_amp_src is not None else 5.0
         except Exception:
             a_amp_v = 5.0
         p["p_aPaceAmp"] = int(round(a_amp_v * 100.0))
 
-        v_amp_src = ui_params.get("Ventricular_Amplitude", ui_params.get("V_Amp_V"))
+        v_amp_src = ui_params.get("Ventricular_Amplitude")
         try:
             v_amp_v = float(v_amp_src) if v_amp_src is not None else 5.0
         except Exception:
