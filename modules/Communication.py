@@ -1,7 +1,4 @@
-"""
-Pacemaker Communication Manager
-High-level interface for parameter communication with pacemaker devices
-"""
+# This module provides high-level communication interface for pacemaker parameter management
 from typing import Dict, Any
 import struct
 import time
