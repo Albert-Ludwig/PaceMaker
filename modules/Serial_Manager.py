@@ -120,7 +120,10 @@ class SerialManager:
         if not isinstance(data, (bytes, bytearray)):
             return False
         try:
-            print(f"[TX List]: {list(data)}") # Debug
+            # Debug-----------------------------------------
+            print(f"[TX List]: {list(data)}") 
+            print(f"[TX HEX]: {data.hex(' ').upper()}")
+            # ----------------------------------------------
             sp = self._port()
             n = sp.write(data)
             sp.flush()
@@ -272,7 +275,7 @@ class SerialManager:
 
     def parse_packet(self, pkt: bytes) -> Optional[Dict[str, Any]]:
         expected_len = 4 + N_DATA + 1
-        
+
         if len(pkt) != expected_len:
             return None
 
