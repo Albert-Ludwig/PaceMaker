@@ -109,11 +109,19 @@ class PacemakerCommunication:
             v_sens_v = 5.0
         p["p_vSens"] = int(round(v_sens_v * 100.0))
 
+        act_map = {
+            "V-Low": 0, "Low": 1, "Med-Low": 2, "Med": 3,
+            "Med-High": 4, "High": 5, "V-High": 6
+        }
         act_src = ui_params.get("Activity_Threshold")
-        try:
-            p["p_ActivityThreshold"] = int(act_src) if act_src is not None else 0
-        except Exception:
-            p["p_ActivityThreshold"] = 0
+        
+        if act_src in act_map:
+            p["p_ActivityThreshold"] = act_map[act_src]
+        else:
+            try:
+                p["p_ActivityThreshold"] = int(act_src) if act_src is not None else 3
+            except Exception:
+                p["p_ActivityThreshold"] = 3
 
         react_src = ui_params.get("Reaction_Time")
         try:
@@ -143,11 +151,19 @@ class PacemakerCommunication:
             hyst_flag = 1 if int(hyst_src) != 0 else 0
         p["p_hysteresisFlag"] = hyst_flag
 
+        rs_map = {
+            "Off": 0, "3%": 1, "6%": 2, "9%": 3, "12%": 4,
+            "15%": 5, "18%": 6, "21%": 7, "25%": 8
+        }
         rs_src = ui_params.get("Rate_Smoothing")
-        try:
-            p["p_RateSmoothing"] = int(rs_src) if rs_src is not None else 0
-        except Exception:
-            p["p_RateSmoothing"] = 0
+        
+        if rs_src in rs_map:
+            p["p_RateSmoothing"] = rs_map[rs_src]
+        else:
+            try:
+                p["p_RateSmoothing"] = int(rs_src) if rs_src is not None else 0
+            except Exception:
+                p["p_RateSmoothing"] = 0
 
         p["p_pacingState"] = 1
         try:
