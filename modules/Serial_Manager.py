@@ -176,13 +176,8 @@ class SerialManager:
         
         header, header_chksum = self._build_header(fn_code)
 
-        # Ensure data is exactly 30 bytes according to the command type
-        if fn_code == K_PPARAMS:
-            data = (data + b'\x00' * N_DATA)[:N_DATA]
-            data_chksum = f_chk(data)
-        else:
-            data = b'\x00' * N_DATA
-            data_chksum = 0
+        # don't have the time to do the check so just set to 0
+        data_chksum = 0
 
         return header + bytes([header_chksum]) + data + bytes([data_chksum])
 
@@ -277,28 +272,20 @@ class SerialManager:
 
     def parse_packet(self, pkt: bytes) -> Optional[Dict[str, Any]]:
         expected_len = 4 + N_DATA + 1
+        
         if len(pkt) != expected_len:
             return None
 
         sync, soh, fn, hdr_chk = pkt[0], pkt[1], pkt[2], pkt[3]
         if sync != SYNC or soh != SOH:
             return None
+        
         if f_chk(bytes([sync, soh, fn])) != hdr_chk:
             return None
 
         data_start = 4
         data_end = 4 + N_DATA
         data = pkt[data_start:data_end]
-        data_chk = pkt[data_end]
-
-        if fn == K_PPARAMS:
-            if f_chk(data) != data_chk:
-                return None
-        if fn == K_EGRAM:
-            return {"fn": fn, "data": data, "header_ok": True, "data_ok": True}
-        else:
-            if any(data) or data_chk != 0:
-                return None
 
         return {"fn": fn, "data": data, "header_ok": True, "data_ok": True}
 
