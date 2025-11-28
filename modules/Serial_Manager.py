@@ -356,6 +356,7 @@ class SerialManager:
             raise ValueError(f"EGRAM data length must be {N_DATA}, got {len(data)}")
         atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
         ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
+        print(f"[EGRAM RAW] A={atr_raw_100}  V={ven_raw_100}")
         atr_amp = atr_raw_100 / 100.0
         ven_amp = ven_raw_100 / 100.0
         return {
