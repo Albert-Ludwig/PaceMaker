@@ -351,27 +351,13 @@ class SerialManager:
             "Rate_Smoothing": rate_smoothing_map.get(rate_smoothing, "Off"),
         }
     
-    # def decode_egram(self, data: bytes) -> Dict[str, Any]:
-    #     if len(data) != N_DATA:
-    #         raise ValueError(f"EGRAM data length must be {N_DATA}, got {len(data)}")
-    #     atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
-    #     ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
-    #     atr_amp = atr_raw_100 / 100.0
-    #     ven_amp = ven_raw_100 / 100.0
-    #     return {
-    #         "m_araw": atr_amp,
-    #         "m_vraw": ven_amp,
-    #     }
     def decode_egram(self, data: bytes) -> Dict[str, Any]:
+        if len(data) != N_DATA:
+            raise ValueError(f"EGRAM data length must be {N_DATA}, got {len(data)}")
         atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
         ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
-
-        atr_norm = atr_raw_100 / 100.0
-        ven_norm = ven_raw_100 / 100.0
-
-        atr_amp = 0.5 - atr_norm
-        ven_amp = 0.5 - ven_norm
-
+        atr_amp = atr_raw_100 / 100.0
+        ven_amp = ven_raw_100 / 100.0
         return {
             "m_araw": atr_amp,
             "m_vraw": ven_amp,
