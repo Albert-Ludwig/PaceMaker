@@ -120,10 +120,6 @@ class SerialManager:
         if not isinstance(data, (bytes, bytearray)):
             return False
         try:
-            # Debug-----------------------------------------
-            print(f"[TX List]: {list(data)}") 
-            print(f"[TX HEX]: {data.hex(' ').upper()}")
-            # ----------------------------------------------
             sp = self._port()
             n = sp.write(data)
             sp.flush()
@@ -172,7 +168,7 @@ class SerialManager:
         The header checksum is XOR over these three bytes.
         """
         header = bytes([SYNC, SOH, _u8(fn_code)])
-        header_chksum = 0x00
+        header_chksum = 0
         return header, header_chksum
 
     def build_packet(self, fn_code: int, data: bytes = b'') -> bytes:
@@ -275,7 +271,7 @@ class SerialManager:
             total_len = 4 + N_DATA + 1
             pkt = sp.read(total_len)
             sp.timeout = old_to
-            print("[DEBUG RX len]:", len(pkt), list(pkt))
+
             if len(pkt) != total_len:
                 return b""
             return pkt
@@ -288,7 +284,7 @@ class SerialManager:
         if len(pkt) != expected_len:
             return None
 
-        sync, soh, fn, hdr_chk = pkt[0], pkt[1], pkt[2], pkt[3]
+        sync, soh, fn, hdr_chk = pkt[0], pkt[1], pkt[2], pkt[3] # hdr_chk is not used since don't have the time to implement
         if sync != SYNC or soh != SOH:
             return None
 
@@ -355,13 +351,27 @@ class SerialManager:
             "Rate_Smoothing": rate_smoothing_map.get(rate_smoothing, "Off"),
         }
     
+    # def decode_egram(self, data: bytes) -> Dict[str, Any]:
+    #     if len(data) != N_DATA:
+    #         raise ValueError(f"EGRAM data length must be {N_DATA}, got {len(data)}")
+    #     atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
+    #     ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
+    #     atr_amp = atr_raw_100 / 100.0
+    #     ven_amp = ven_raw_100 / 100.0
+    #     return {
+    #         "m_araw": atr_amp,
+    #         "m_vraw": ven_amp,
+    #     }
     def decode_egram(self, data: bytes) -> Dict[str, Any]:
-        if len(data) != N_DATA:
-            raise ValueError(f"EGRAM data length must be {N_DATA}, got {len(data)}")
         atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
         ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
-        atr_amp = atr_raw_100 / 100.0
-        ven_amp = ven_raw_100 / 100.0
+
+        atr_norm = atr_raw_100 / 100.0
+        ven_norm = ven_raw_100 / 100.0
+
+        atr_amp = 0.5 - atr_norm
+        ven_amp = 0.5 - ven_norm
+
         return {
             "m_araw": atr_amp,
             "m_vraw": ven_amp,
