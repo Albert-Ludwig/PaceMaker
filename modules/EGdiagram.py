@@ -241,64 +241,191 @@ class EgramWindow:
         self.stop()
         self.window.destroy()
 
+# class PacemakerEgramSource:
+#     def __init__(self, comm_manager, sample_rate=200):
+#         self.comm_manager = comm_manager
+#         self.sample_rate = sample_rate
+#         self.time = 0.0
+
+#     def stream(self):
+#         if self.comm_manager is None:
+#             return
+#         try:
+#             if not self.comm_manager.get_connection_status():
+#                 return
+#         except Exception:
+#             return
+#         serial_mgr = getattr(self.comm_manager, "serial_mgr", None)
+#         if not serial_mgr or not serial_mgr.is_connected():
+#             return
+#         try:
+#             if not serial_mgr.start_egram():
+#                 return
+#         except Exception:
+#             return
+#         try:
+#             while True:
+#                 try:
+#                     if not self.comm_manager.get_connection_status():
+#                         break
+#                 except Exception:
+#                     break
+#                 batch = []
+#                 for _ in range(10):
+#                     pkt = serial_mgr.read_packet(timeout=0.1)
+#                     if not pkt:
+#                         continue
+#                     try:
+#                         parsed = serial_mgr.parse_packet(pkt)
+#                     except Exception:
+#                         parsed = None
+#                     if not parsed:
+#                         continue
+#                     data = parsed.get("data", b"")
+#                     if not data:
+#                         continue
+#                     try:
+#                         decoded = serial_mgr.decode_egram(data)
+#                         a_amp = float(decoded.get("m_araw", 0.0))
+#                         v_amp = float(decoded.get("m_vraw", 0.0))
+#                     except Exception:
+#                         a_amp, v_amp = 0.0, 0.0
+#                     t = self.time
+#                     batch.append((t, a_amp, v_amp))
+#                     self.time += 1.0 / self.sample_rate
+#                 if batch:
+#                     yield batch
+#                 else:
+#                     time.sleep(0.01)
+#         finally:
+#             try:
+#                 serial_mgr.stop_egram()
+#             except Exception:
+#                 pass
 class PacemakerEgramSource:
     def __init__(self, comm_manager, sample_rate=200):
         self.comm_manager = comm_manager
         self.sample_rate = sample_rate
         self.time = 0.0
+        self.packet_count = 0
+        self.error_count = 0
 
     def stream(self):
+        print("[EGRAM] Starting stream...")
+        
         if self.comm_manager is None:
+            print("[ERROR] comm_manager is None")
             return
+        
         try:
             if not self.comm_manager.get_connection_status():
+                print("[ERROR] Connection status is False")
                 return
-        except Exception:
+        except Exception as e:
+            print(f"[ERROR] get_connection_status failed: {e}")
             return
+        
         serial_mgr = getattr(self.comm_manager, "serial_mgr", None)
-        if not serial_mgr or not serial_mgr.is_connected():
+        if not serial_mgr:
+            print("[ERROR] serial_mgr not found")
             return
+        
+        if not serial_mgr.is_connected():
+            print("[ERROR] serial_mgr not connected")
+            return
+        
+        print("[EGRAM] Calling start_egram()...")
         try:
-            if not serial_mgr.start_egram():
+            result = serial_mgr.start_egram()
+            print(f"[EGRAM] start_egram() returned: {result}")
+            if not result:
+                print("[ERROR] start_egram() failed")
                 return
-        except Exception:
+        except Exception as e:
+            print(f"[ERROR] start_egram() exception: {e}")
             return
+        
+        print("[EGRAM] EG stream started, entering read loop...")
+        
         try:
             while True:
                 try:
                     if not self.comm_manager.get_connection_status():
+                        print("[INFO] Connection lost, breaking")
                         break
-                except Exception:
+                except Exception as e:
+                    print(f"[ERROR] Connection check failed: {e}")
                     break
+                
                 batch = []
-                for _ in range(10):
+                
+                for i in range(10):
+                    # 读取数据包
                     pkt = serial_mgr.read_packet(timeout=0.1)
+                    
                     if not pkt:
                         continue
+                    
+                    self.packet_count += 1
+                    print(f"[PACKET #{self.packet_count}] Received {len(pkt)} bytes: {pkt.hex(' ').upper()}")
+                    
+                    # 解析数据包
                     try:
                         parsed = serial_mgr.parse_packet(pkt)
-                    except Exception:
-                        parsed = None
-                    if not parsed:
+                        
+                        if not parsed:
+                            print(f"[ERROR] parse_packet returned None")
+                            self.error_count += 1
+                            continue
+                        
+                        if not parsed.get("header_ok"):
+                            print(f"[ERROR] Header checksum failed")
+                            self.error_count += 1
+                            continue
+                        
+                        print(f"[PARSED] FnCode: 0x{parsed.get('fn', 0):02X}, Data len: {len(parsed.get('data', b''))}")
+                        
+                    except Exception as e:
+                        print(f"[ERROR] parse_packet exception: {e}")
+                        self.error_count += 1
                         continue
+                    
+                    # 获取数据
                     data = parsed.get("data", b"")
-                    if not data:
+                    if not data or len(data) < 4:
+                        print(f"[ERROR] Invalid data: {len(data)} bytes")
                         continue
+                    
+                    # 解码 EG 数据
                     try:
                         decoded = serial_mgr.decode_egram(data)
+                        print(f"[DECODED] {decoded}")
+                        
                         a_amp = float(decoded.get("m_araw", 0.0))
                         v_amp = float(decoded.get("m_vraw", 0.0))
-                    except Exception:
+                        
+                        print(f"[VALUE] Atrial: {a_amp}, Ventricular: {v_amp}")
+                        
+                    except Exception as e:
+                        print(f"[ERROR] decode_egram exception: {e}")
+                        self.error_count += 1
                         a_amp, v_amp = 0.0, 0.0
+                    
                     t = self.time
                     batch.append((t, a_amp, v_amp))
                     self.time += 1.0 / self.sample_rate
+                
                 if batch:
+                    print(f"[BATCH] Yielding {len(batch)} samples, Total packets: {self.packet_count}, Errors: {self.error_count}")
                     yield batch
                 else:
+                    print(f"[DEBUG] Empty batch, sleeping 0.01s")
                     time.sleep(0.01)
+        
         finally:
+            print("[EGRAM] Stream ending, calling stop_egram()...")
             try:
                 serial_mgr.stop_egram()
-            except Exception:
-                pass
+                print("[EGRAM] stop_egram() completed")
+            except Exception as e:
+                print(f"[ERROR] stop_egram() failed: {e}")
