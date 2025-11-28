@@ -83,7 +83,7 @@ class EgramView(tk.Frame):
         self.figure = Figure(figsize=(5, 4), dpi=100)
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlabel("Time (s)")
-        self.ax.set_ylabel("Amplitude (mV)")
+        self.ax.set_ylabel("Amplitude (V)")
         self.ax.grid(True, linestyle='--', alpha=0.6)
         self.lines = {}
         for name, color in self.colors.items():
