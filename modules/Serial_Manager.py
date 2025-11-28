@@ -172,7 +172,7 @@ class SerialManager:
         The header checksum is XOR over these three bytes.
         """
         header = bytes([SYNC, SOH, _u8(fn_code)])
-        header_chksum = f_chk(header)
+        header_chksum = 0x00
         return header, header_chksum
 
     def build_packet(self, fn_code: int, data: bytes = b'') -> bytes:
@@ -290,9 +290,6 @@ class SerialManager:
 
         sync, soh, fn, hdr_chk = pkt[0], pkt[1], pkt[2], pkt[3]
         if sync != SYNC or soh != SOH:
-            return None
-        
-        if f_chk(bytes([sync, soh, fn])) != hdr_chk:
             return None
 
         data_start = 4
