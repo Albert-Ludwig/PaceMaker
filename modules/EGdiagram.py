@@ -144,7 +144,7 @@ class EgramView(tk.Frame):
             ys = [p[1] for p in data]
             line.set_data(xs, ys)
         self.ax.set_xlim(t0, t1)
-        limit = (2.5 / model.gain) / self.zoom
+        limit = (25.0 / model.gain) / self.zoom
         self.ax.set_ylim(-limit, limit)
         self.canvas_agg.draw_idle()
 
