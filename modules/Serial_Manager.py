@@ -363,8 +363,8 @@ class SerialManager:
     #         "m_vraw": ven_amp,
     #     }
     def decode_egram(self, data: bytes) -> Dict[str, Any]:
-        atr_raw_100 = struct.unpack_from('<H', data, 0)[0]
-        ven_raw_100 = struct.unpack_from('<H', data, 2)[0]
+        atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
+        ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
 
         atr_norm = atr_raw_100 / 100.0
         ven_norm = ven_raw_100 / 100.0
