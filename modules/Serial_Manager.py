@@ -176,10 +176,17 @@ class SerialManager:
         return header, header_chksum
 
     def build_packet(self, fn_code: int, data: bytes = b'') -> bytes:
-        
         header, header_chksum = self._build_header(fn_code)
 
-        # don't have the time to do the check so just set to 0
+        if data is None:
+            data = b''
+
+        if len(data) > N_DATA:
+            raise ValueError(f"data length {len(data)} exceeds N_DATA={N_DATA}")
+
+        if len(data) < N_DATA:
+            data = data + bytes(N_DATA - len(data))
+
         data_chksum = 0
 
         return header + bytes([header_chksum]) + data + bytes([data_chksum])
@@ -247,16 +254,17 @@ class SerialManager:
         return self.send_data(packet)
 
     def request_parameters(self) -> bool:
-        """Send K_ECHO (13 zero data bytes, DataChk=0)."""
+        """Send K_ECHO (30 zero data bytes, DataChk=0)."""
         return self.send_data(self.build_packet(K_ECHO))
 
     def start_egram(self) -> bool:
-        """Send K_EGRAM (13 zero data bytes, DataChk=0)."""
+        """Send K_EGRAM (30 zero data bytes, DataChk=0)."""
         return self.send_data(self.build_packet(K_EGRAM))
 
     def stop_egram(self) -> bool:
-        """Send K_ESTOP (13 zero data bytes, DataChk=0)."""
+        """Send K_ESTOP (30 zero data bytes, DataChk=0)."""
         return self.send_data(self.build_packet(K_ESTOP))
+
 
     def read_packet(self, timeout: float = 2.0) -> bytes:
         try:
@@ -267,6 +275,7 @@ class SerialManager:
             total_len = 4 + N_DATA + 1
             pkt = sp.read(total_len)
             sp.timeout = old_to
+            print("[DEBUG RX len]:", len(pkt), list(pkt))
             if len(pkt) != total_len:
                 return b""
             return pkt

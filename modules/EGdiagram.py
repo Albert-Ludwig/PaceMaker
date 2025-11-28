@@ -15,6 +15,7 @@ class EgramModel:
     def __init__(self, time_span_s=10.0, sample_rate=200):
         self.time_span_s = time_span_s
         self.sample_rate = sample_rate
+        self.gain =1.0
         # Buffer holds enough data for smooth scrolling (approx 8x window width)
         maxlen = int(self.time_span_s * self.sample_rate * 8) + 1
         
