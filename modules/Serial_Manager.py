@@ -368,13 +368,14 @@ class SerialManager:
 
         atr_raw_100 = struct.unpack_from('<H', data, 12)[0]
         ven_raw_100 = struct.unpack_from('<H', data, 14)[0]
-        print(f"[EGRAM RAW] A={atr_raw_100}  V={ven_raw_100}")
 
-        atr_amp = atr_raw_100 / 100.0   
-        ven_amp = ven_raw_100 / 100.0
+        atr_v = atr_raw_100 / 100.0
+        ven_v = ven_raw_100 / 100.0
+
+        atr_amp = 5.0 - atr_v
+        ven_amp = 5.0 - ven_v
 
         return {
             "m_araw": atr_amp,
             "m_vraw": ven_amp,
         }
-
