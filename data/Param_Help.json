@@ -1,0 +1,132 @@
+{
+  "parameters": [
+    {
+      "name": "Lower_Rate_Limit",
+      "dataType": "int",
+      "unit": "bpm",
+      "validRange": "30–50 (step 5), 50–90 (step 1), 90–175 (step 5) and < URL",
+      "description": "Lower pacing rate limit. Heart rate cannot fall below this value; used to calculate timing cycles (RR = 60000/LRL ms).",
+      "applicableModes": ["AOO", "VOO", "AAI", "VVI", "AOOR", "VOOR", "AAIR", "VVIR"]
+    },
+    {
+      "name": "Upper_Rate_Limit",
+      "dataType": "int",
+      "unit": "bpm",
+      "validRange": "50–175 (step 5) and > LRL",
+      "description": "Upper pacing rate limit. Restricts maximum pacing frequency.",
+      "applicableModes": ["AOO", "VOO", "AAI", "VVI", "AOOR", "VOOR", "AAIR", "VVIR"]
+    },
+    {
+      "name": "Atrial_Amplitude",
+      "dataType": "float",
+      "unit": "V",
+      "validRange": "0.1–5.0 (step 0.1)",
+      "description": "Atrial pacing pulse voltage amplitude, determines stimulation intensity.",
+      "applicableModes": ["AOO", "AAI", "AOOR", "AAIR"]
+    },
+    {
+      "name": "Atrial_Pulse_Width",
+      "dataType": "int",
+      "unit": "ms",
+      "validRange": "1–30 (step 1)",
+      "description": "Atrial pacing pulse width, combined with amplitude determines energy delivery.",
+      "applicableModes": ["AOO", "AAI", "AOOR", "AAIR"]
+    },
+    {
+      "name": "Ventricular_Amplitude",
+      "dataType": "float",
+      "unit": "V",
+      "validRange": "0.1–5.0 (step 0.1)",
+      "description": "Ventricular pacing pulse voltage amplitude.",
+      "applicableModes": ["VOO", "VVI", "VOOR", "VVIR"]
+    },
+    {
+      "name": "Ventricular_Pulse_Width",
+      "dataType": "int",
+      "unit": "ms",
+      "validRange": "1–30 (step 1)",
+      "description": "Ventricular pacing pulse width.",
+      "applicableModes": ["VOO", "VVI", "VOOR", "VVIR"]
+    },
+    {
+      "name": "ARP",
+      "dataType": "int",
+      "unit": "ms",
+      "validRange": "150–500 (step 10)",
+      "description": "Atrial Refractory Period: Used in AAI/AAIR to ignore signals post-pacing and prevent false triggering.",
+      "applicableModes": ["AAI", "AAIR"]
+    },
+    {
+      "name": "VRP",
+      "dataType": "int",
+      "unit": "ms",
+      "validRange": "150–500 (step 10)",
+      "description": "Ventricular Refractory Period: Used in VVI/VVIR to ignore T-waves etc. and prevent false sensing.",
+      "applicableModes": ["VVI", "VVIR"]
+    },
+    {
+      "name": "Atrial_Sensitivity",
+      "dataType": "float",
+      "unit": "V",
+      "validRange": "0–5.0 (step 0.1)",
+      "description": "Atrial sensing threshold. Lower values increase sensitivity to detect weaker P waves; 0 = sensing disabled.",
+      "applicableModes": ["AAI", "AAIR"]
+    },
+    {
+      "name": "Ventricular_Sensitivity",
+      "dataType": "float",
+      "unit": "V",
+      "validRange": "0–5.0 (step 0.1)",
+      "description": "Ventricular sensing threshold. Lower values increase sensitivity to detect weaker QRS complexes; 0 = sensing disabled.",
+      "applicableModes": ["VVI", "VVIR"]
+    },
+    {
+      "name": "PVARP",
+      "dataType": "int",
+      "unit": "ms",
+      "validRange": "150–500 (step 10)",
+      "description": "Post Ventricular Atrial Refractory Period. Prevents atrial sensing immediately after ventricular event to avoid false triggers from far-field R-waves.",
+      "applicableModes": ["AAI", "AAIR"]
+    },
+    {
+      "name": "Maximum_Sensor_Rate",
+      "dataType": "int",
+      "unit": "ppm",
+      "validRange": "50–175 (step 5)",
+      "description": "Maximum rate-adaptive pacing rate. Pacemaker will not exceed this rate even with maximum activity level.",
+      "applicableModes": ["AOOR", "VOOR", "AAIR", "VVIR"]
+    },
+    {
+      "name": "Activity_Threshold",
+      "dataType": "string",
+      "unit": "—",
+      "validRange": "V-Low, Low, Med-Low, Med, Med-High, High, V-High",
+      "description": "Activity sensor detection threshold. Higher thresholds require more vigorous activity to trigger rate adaptation.",
+      "applicableModes": ["AOOR", "VOOR", "AAIR", "VVIR"]
+    },
+    {
+      "name": "Response_Factor",
+      "dataType": "int",
+      "unit": "—",
+      "validRange": "1–16 (step 1)",
+      "description": "Determines how aggressively the pacing rate increases in response to detected activity. Higher values = faster rate increase.",
+      "applicableModes": ["AOOR", "VOOR", "AAIR", "VVIR"]
+    },
+    {
+      "name": "Reaction_Time",
+      "dataType": "int",
+      "unit": "sec",
+      "validRange": "10–50 (step 10)",
+      "description": "Time for pacing rate to accelerate from LRL to activity-indicated rate after activity onset.",
+      "applicableModes": ["AOOR", "VOOR", "AAIR", "VVIR"]
+    },
+    {
+      "name": "Recovery_Time",
+      "dataType": "int",
+      "unit": "min",
+      "validRange": "2–16 (step 1)",
+      "description": "Time for pacing rate to decelerate from elevated rate back to LRL after activity cessation.",
+      "applicableModes": ["AOOR", "VOOR", "AAIR", "VVIR"]
+    }
+  ]
+}

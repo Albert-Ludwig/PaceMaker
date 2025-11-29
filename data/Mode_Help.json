@@ -1,0 +1,143 @@
+{
+  "pacemaker_modes": [
+    {
+      "mode_name": "AOO",
+      "full_name": "Atrial Asynchronous Pacing",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "None",
+      "response_to_sensing": "None (no sensing, no inhibition)",
+      "purpose": "Delivers pulses to the atrium at a fixed rate; the pacemaker continues to function regardless of the patient's intrinsic P waves. Commonly used for device testing or when the patient lacks atrial rhythm.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)", 
+        "Atrial_Amplitude (V)",
+        "Atrial_Pulse_Width (ms)"
+      ]
+    },
+    {
+      "mode_name": "VOO",
+      "full_name": "Ventricular Asynchronous Pacing", 
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "None",
+      "response_to_sensing": "None (no sensing, no inhibition)",
+      "purpose": "Delivers pulses to the ventricle at fixed intervals; pacing continues even if intrinsic QRS complexes are present. Used for complete AV block or to maintain a fixed rate in emergencies.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)"
+      ]
+    },
+    {
+      "mode_name": "AAI",
+      "full_name": "Atrial Demand Pacing / Atrial Inhibited",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "Atrium", 
+      "response_to_sensing": "Inhibit (pacing inhibition)",
+      "purpose": "The pacemaker senses atrial P waves; if intrinsic P waves are detected, output is inhibited. Otherwise, it paces at the LRL interval. Suitable for sinus node dysfunction with normal AV conduction.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Atrial_Amplitude (V)", 
+        "Atrial_Pulse_Width (ms)",
+        "ARP (ms)"
+      ]
+    },
+    {
+      "mode_name": "VVI",
+      "full_name": "Ventricular Demand Pacing / Ventricular Inhibited",
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "Ventricle",
+      "response_to_sensing": "Inhibit (pacing inhibition)", 
+      "purpose": "Senses ventricular QRS waves; if intrinsic ventricular contractions are detected, pacing is inhibited. Otherwise, it delivers pulses after the LRL interval. Used for AV conduction block or bradycardia.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)", 
+        "VRP (ms)"
+      ]
+    },
+    {
+      "mode_name": "AOOR",
+      "full_name": "Atrial Asynchronous Rate-Adaptive Pacing",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "Activity Sensor (no cardiac sensing)",
+      "response_to_sensing": "Rate modulation based on activity sensor input",
+      "purpose": "Fixed-rate atrial pacing with rate adaptation. Pacing rate increases with detected physical activity. No cardiac sensing, so pacing continues regardless of intrinsic atrial rhythm. Suitable for chronotropic incompetence with unreliable atrial sensing.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Atrial_Amplitude (V)",
+        "Atrial_Pulse_Width (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)"
+      ]
+    },
+    {
+      "mode_name": "VOOR",
+      "full_name": "Ventricular Asynchronous Rate-Adaptive Pacing",
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "Activity Sensor (no cardiac sensing)",
+      "response_to_sensing": "Rate modulation based on activity sensor input",
+      "purpose": "Fixed-rate ventricular pacing with rate adaptation. Pacing rate increases with activity but no intrinsic QRS sensing. Used for complete AV block with chronotropic incompetence or when ventricular sensing is unreliable.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)"
+      ]
+    },
+    {
+      "mode_name": "AAIR",
+      "full_name": "Atrial Demand Rate-Adaptive Pacing",
+      "pacing_chamber": "Atrium",
+      "sensing_chamber": "Atrium + Activity Sensor",
+      "response_to_sensing": "Inhibit (pacing inhibition) + Rate modulation",
+      "purpose": "Atrial demand pacing with rate adaptation. Senses intrinsic P waves (inhibits pacing if present) and increases pacing rate with activity. Ideal for sinus node dysfunction with chronotropic incompetence and intact AV conduction.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Atrial_Amplitude (V)",
+        "Atrial_Pulse_Width (ms)",
+        "ARP (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)",
+        "Atrial_Sensitivity (V)",
+        "PVARP (ms)"
+      ]
+    },
+    {
+      "mode_name": "VVIR",
+      "full_name": "Ventricular Demand Rate-Adaptive Pacing",
+      "pacing_chamber": "Ventricle",
+      "sensing_chamber": "Ventricle + Activity Sensor",
+      "response_to_sensing": "Inhibit (pacing inhibition) + Rate modulation",
+      "purpose": "Ventricular demand pacing with rate adaptation. Senses intrinsic QRS (inhibits pacing if present) and increases rate with activity. Used for AV block or bradycardia with chronotropic incompetence, especially in active patients.",
+      "required_parameters": [
+        "Lower_Rate_Limit (bpm)",
+        "Upper_Rate_Limit (bpm)",
+        "Ventricular_Amplitude (V)",
+        "Ventricular_Pulse_Width (ms)",
+        "VRP (ms)",
+        "Maximum_Sensor_Rate (ppm)",
+        "Activity_Threshold (V-Low to V-High)",
+        "Response_Factor (1–16)",
+        "Reaction_Time (sec)",
+        "Recovery_Time (min)",
+        "Ventricular_Sensitivity (V)"
+      ]
+    }
+  ]
+}
